@@ -1,0 +1,38 @@
+# 프로젝트 린트 정책 (재현 가능한 검사 상태 유지)
+#   ruff check scripts/            # 위반 0 목표
+#   ruff check scripts/ --fix      # 자동 수정 가능 항목
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+# vendored 서드파티(DunbrackLab IPSAE, MIT)는 원본 형태를 유지한다.
+extend-exclude = ["scripts/vendor"]
+
+[tool.ruff.lint]
+select = [
+    "E4", "E7", "E9",   # 기본 오류
+    "F", "W",           # pyflakes / 경고
+    "I",                # import 정렬
+    "UP",               # pyupgrade
+    "B",                # bugbear
+    "SIM",              # simplify
+    "PL",               # pylint 계열
+    "RUF",              # ruff 자체 규칙
+    "DTZ",              # timezone-aware datetime
+    "BLE",              # blind except
+    "EXE",              # shebang/실행 권한
+    "ISC",              # 암시적 문자열 결합
+    "PIE",              # 불필요한 코드
+    "C4",               # comprehension
+    "FURB",             # refurb
+]
+ignore = [
+    # 설계상 의도한 항목 (기능/안전과 무관)
+    "PLR0917",  # positional 인자 수 (분석 함수 API)
+    "PLC0415",  # 지연 import (선택 의존성: gemmi/boltz/anarci 등)
+    "PLR0911",  # return 수
+    "PLR0912",  # 분기 수
+    "PLR0913",  # 인자 수
+    "PLR0915",  # 문장 수
+    "PLR2004",  # 매직 넘버 (수치 임계값은 문맥상 명확)
+    "RUF001",   # 한글·기호 텍스트 (× 등)
+]

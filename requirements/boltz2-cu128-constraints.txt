@@ -1,0 +1,5 @@
+# Installation constraints for the Ubuntu/RTX 50-series handoff path.
+# PyTorch official 2.7 wheels provide CUDA 12.8 builds for Blackwell GPUs.
+torch==2.7.0+cu128
+numpy<2.0
+contourpy<1.4

@@ -1,0 +1,7 @@
+condition	model	ipTM	ipSAE	pDockQ2	iface_pae_A	DockQ
+no_hotspot	0	0.389	0	0.023	13.14	0.102
+no_hotspot	1	0.345	0	0.021	13.77	0.069
+no_hotspot	2	0.16	0	0.012	20.01	0.073
+hotspot_true_epitope	0	0.628	0.266	0.16	6.18	0.144
+hotspot_true_epitope	1	0.508	0.118	0.087	8.27	0.063
+hotspot_true_epitope	2	0.418	0.053	0.053	9.83	0.141

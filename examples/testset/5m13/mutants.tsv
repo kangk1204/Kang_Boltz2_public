@@ -1,0 +1,22 @@
+name	antigen	nanobody	reference	notes
+5m13_m_WT	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_WT.fasta	-	m0: 야생형 대조
+5m13_m_v01	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v01.fasta	-	m1: W102Y
+5m13_m_v02	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v02.fasta	-	m2: L108P, W111P
+5m13_m_v03	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v03.fasta	-	m3: G27I, R58S, G103L
+5m13_m_v04	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v04.fasta	-	m1: Y53N
+5m13_m_v05	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v05.fasta	-	m2: T56W, W102G
+5m13_m_v06	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v06.fasta	-	m3: D28F, T109M, Y115A
+5m13_m_v07	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v07.fasta	-	m1: S106T
+5m13_m_v08	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v08.fasta	-	m2: A100Y, T109M
+5m13_m_v09	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v09.fasta	-	m3: G57N, R58L, A100V
+5m13_m_v10	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v10.fasta	-	m1: Y53M
+5m13_m_v11	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v11.fasta	-	m2: D28V, Y53H
+5m13_m_v12	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v12.fasta	-	m3: A99V, S106D, F112A
+5m13_m_v13	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v13.fasta	-	m1: D28F
+5m13_m_v14	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v14.fasta	-	m2: K30R, Y115A
+5m13_m_v15	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v15.fasta	-	m3: I29V, G57T, F112Y
+5m13_m_v16	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v16.fasta	-	m1: S106K
+5m13_m_v17	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v17.fasta	-	m2: G27N, S106V
+5m13_m_v18	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v18.fasta	-	m3: S55N, T59R, T109Q
+5m13_m_v19	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v19.fasta	-	m1: Y113A
+5m13_m_v20	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v20.fasta	-	m2: S33Q, Q105K

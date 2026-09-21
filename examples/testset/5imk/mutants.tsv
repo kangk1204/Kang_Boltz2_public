@@ -1,0 +1,22 @@
+name	antigen	nanobody	reference	notes
+5imk_m_WT	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_WT.fasta	-	m0: 야생형 대조
+5imk_m_v01	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v01.fasta	-	m1: A97P
+5imk_m_v02	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v02.fasta	-	m2: G55K, T58F
+5imk_m_v03	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v03.fasta	-	m3: T58W, G99H, E111Y
+5imk_m_v04	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v04.fasta	-	m1: G26M
+5imk_m_v05	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v05.fasta	-	m2: R27H, Y112I
+5imk_m_v06	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v06.fasta	-	m3: N54F, G105P, D113P
+5imk_m_v07	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v07.fasta	-	m1: S31Y
+5imk_m_v08	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v08.fasta	-	m2: A97K, E111L
+5imk_m_v09	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v09.fasta	-	m3: S30Y, S31T, G55K
+5imk_m_v10	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v10.fasta	-	m1: S30F
+5imk_m_v11	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v11.fasta	-	m2: G56E, D102G
+5imk_m_v12	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v12.fasta	-	m3: S31T, Y32W, D110M
+5imk_m_v13	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v13.fasta	-	m1: G33Q
+5imk_m_v14	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v14.fasta	-	m2: F29W, Y114Q
+5imk_m_v15	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v15.fasta	-	m3: S57G, T58Q, E111R
+5imk_m_v16	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v16.fasta	-	m1: G26D
+5imk_m_v17	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v17.fasta	-	m2: F29D, Y112P
+5imk_m_v18	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v18.fasta	-	m3: G33V, A97E, F108W
+5imk_m_v19	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v19.fasta	-	m1: E111G
+5imk_m_v20	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v20.fasta	-	m2: R52W, R100E

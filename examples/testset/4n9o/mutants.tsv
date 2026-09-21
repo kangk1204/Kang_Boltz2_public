@@ -1,0 +1,22 @@
+name	antigen	nanobody	reference	notes
+4n9o_m_WT	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_WT.fasta	-	m0: 야생형 대조
+4n9o_m_v01	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v01.fasta	-	m1: S31D
+4n9o_m_v02	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v02.fasta	-	m2: D56M, D112A
+4n9o_m_v03	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v03.fasta	-	m3: R27G, S58F, Y103F
+4n9o_m_v04	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v04.fasta	-	m1: Y32W
+4n9o_m_v05	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v05.fasta	-	m2: A97T, Y103Q
+4n9o_m_v06	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v06.fasta	-	m3: Y32S, G55N, D112F
+4n9o_m_v07	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v07.fasta	-	m1: G110M
+4n9o_m_v08	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v08.fasta	-	m2: N33R, S54A
+4n9o_m_v09	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v09.fasta	-	m3: I51Q, Y111E, H113V
+4n9o_m_v10	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v10.fasta	-	m1: G99S
+4n9o_m_v11	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v11.fasta	-	m2: G101L, I102D
+4n9o_m_v12	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v12.fasta	-	m3: T28E, I51E, S54E
+4n9o_m_v13	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v13.fasta	-	m1: R106I
+4n9o_m_v14	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v14.fasta	-	m2: A97V, G99W
+4n9o_m_v15	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v15.fasta	-	m3: T28D, S30R, S54V
+4n9o_m_v16	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v16.fasta	-	m1: T28N
+4n9o_m_v17	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v17.fasta	-	m2: I51Q, Y103D
+4n9o_m_v18	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v18.fasta	-	m3: F29N, G55R, R106G
+4n9o_m_v19	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v19.fasta	-	m1: G109N
+4n9o_m_v20	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v20.fasta	-	m2: R27V, I51A

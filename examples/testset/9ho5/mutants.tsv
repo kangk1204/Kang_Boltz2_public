@@ -1,0 +1,22 @@
+name	antigen	nanobody	reference	notes
+9ho5_m_WT	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_WT.fasta	-	m0: 야생형 대조
+9ho5_m_v01	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v01.fasta	-	m1: G55L
+9ho5_m_v02	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v02.fasta	-	m2: P99D, V102F
+9ho5_m_v03	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v03.fasta	-	m3: D54N, P100E, I101W
+9ho5_m_v04	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v04.fasta	-	m1: D54T
+9ho5_m_v05	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v05.fasta	-	m2: G55I, I101S
+9ho5_m_v06	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v06.fasta	-	m3: S56W, V102E, D108P
+9ho5_m_v07	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v07.fasta	-	m1: I101H
+9ho5_m_v08	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v08.fasta	-	m2: N105A, Y109N
+9ho5_m_v09	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v09.fasta	-	m3: L51T, D53R, V104H
+9ho5_m_v10	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v10.fasta	-	m1: L51S
+9ho5_m_v11	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v11.fasta	-	m2: L51D, N96H
+9ho5_m_v12	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v12.fasta	-	m3: G26V, A97G, T107Q
+9ho5_m_v13	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v13.fasta	-	m1: G55K
+9ho5_m_v14	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v14.fasta	-	m2: P99F, I101D
+9ho5_m_v15	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v15.fasta	-	m3: G55V, N96D, P99A
+9ho5_m_v16	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v16.fasta	-	m1: V98E
+9ho5_m_v17	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v17.fasta	-	m2: S56P, P100I
+9ho5_m_v18	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v18.fasta	-	m3: D54V, A97M, V104A
+9ho5_m_v19	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v19.fasta	-	m1: A106V
+9ho5_m_v20	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v20.fasta	-	m2: V98I, I101N

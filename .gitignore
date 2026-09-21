@@ -1,0 +1,37 @@
+# 실행 산출물 (리포지토리에 커밋하지 않음)
+outputs/
+logs/
+inputs/generated/
+.boltz_env
+msa_cache/
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.ipynb_checkpoints/
+
+# 편집기/OS
+.vscode/
+.idea/
+.DS_Store
+*~
+
+# Boltz 가중치/캐시 (홈 디렉터리 기본값이지만 실수 방지)
+.boltz/
+*.ckpt
+
+# ruff
+.ruff_cache/
+
+# pytest
+.pytest_cache/
+
+# PDB 테스트셋 원본 CIF 캐시
+examples/testset/_cif_cache/
+examples/complexes/_cif_cache/
+
+# OMC 런타임 상태(프로젝트 산출물 아님)
+.omc/
+.omx/

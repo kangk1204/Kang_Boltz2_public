@@ -1,0 +1,5 @@
+name	antigen	nanobody	reference	notes
+cAbLys3_WT	inputs/target.fasta	inputs/nanobody.fasta	inputs/reference_example_1MEL.cif	야생형 (양성 대조; DockQ 계산됨)
+cAbLys3_CDR3_AA	inputs/target.fasta	examples/mutants/m1_CDR3_Y102A_Y105A.fasta	-	CDR3 파라토프 2중 돌연변이 (결합 소실 예상)
+cAbLys3_CDR2_A	inputs/target.fasta	examples/mutants/m2_CDR2_I56A.fasta	-	CDR2 파라토프 단일 돌연변이
+cAbLys3_CDR3_FF	inputs/target.fasta	examples/mutants/m3_CDR3_Y102F_Y105F.fasta	-	보존적 치환(Y->F) 대조군

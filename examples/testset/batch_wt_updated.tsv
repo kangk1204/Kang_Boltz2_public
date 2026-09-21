@@ -1,0 +1,10 @@
+name	antigen	nanobody	reference	notes
+4n9o_wt	examples/testset/4n9o/target.fasta	examples/testset/4n9o/nanobody.fasta	examples/testset/4n9o/reference.cif	갱신된 엔티티 서열 기반 재예측 (4n9o)
+5imk_wt	examples/testset/5imk/target.fasta	examples/testset/5imk/nanobody.fasta	examples/testset/5imk/reference.cif	갱신된 엔티티 서열 기반 재예측 (5imk)
+5imm_wt	examples/testset/5imm/target.fasta	examples/testset/5imm/nanobody.fasta	examples/testset/5imm/reference.cif	갱신된 엔티티 서열 기반 재예측 (5imm)
+6xzu_wt	examples/testset/6xzu/target.fasta	examples/testset/6xzu/nanobody.fasta	examples/testset/6xzu/reference.cif	갱신된 엔티티 서열 기반 재예측 (6xzu)
+5m13_wt	examples/testset/5m13/target.fasta	examples/testset/5m13/nanobody.fasta	examples/testset/5m13/reference.cif	갱신된 엔티티 서열 기반 재예측 (5m13)
+8qf4_wt	examples/testset/8qf4/target.fasta	examples/testset/8qf4/nanobody.fasta	examples/testset/8qf4/reference.cif	갱신된 엔티티 서열 기반 재예측 (8qf4)
+6her_wt	examples/testset/6her/target.fasta	examples/testset/6her/nanobody.fasta	examples/testset/6her/reference.cif	갱신된 엔티티 서열 기반 재예측 (6her)
+9ho5_wt	examples/testset/9ho5/target.fasta	examples/testset/9ho5/nanobody.fasta	examples/testset/9ho5/reference.cif	갱신된 엔티티 서열 기반 재예측 (9ho5)
+7oao_wt	examples/testset/7oao/target.fasta	examples/testset/7oao/nanobody.fasta	examples/testset/7oao/reference.cif	엔티티 서열 기반 재예측 (7oao)

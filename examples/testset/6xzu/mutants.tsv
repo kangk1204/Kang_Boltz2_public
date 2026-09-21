@@ -1,0 +1,22 @@
+name	antigen	nanobody	reference	notes
+6xzu_m_WT	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_WT.fasta	-	m0: 야생형 대조
+6xzu_m_v01	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v01.fasta	-	m1: M104P
+6xzu_m_v02	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v02.fasta	-	m2: S28F, L98P
+6xzu_m_v03	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v03.fasta	-	m3: Y53M, R57V, T107N
+6xzu_m_v04	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v04.fasta	-	m1: S28G
+6xzu_m_v05	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v05.fasta	-	m2: S28T, T102P
+6xzu_m_v06	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v06.fasta	-	m3: S28Q, S31N, A101M
+6xzu_m_v07	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v07.fasta	-	m1: S54Y
+6xzu_m_v08	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v08.fasta	-	m2: T29W, K108F
+6xzu_m_v09	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v09.fasta	-	m3: S54P, N97Q, M104P
+6xzu_m_v10	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v10.fasta	-	m1: G27D
+6xzu_m_v11	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v11.fasta	-	m2: G27N, F30Y
+6xzu_m_v12	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v12.fasta	-	m3: G27D, R57Y, T102F
+6xzu_m_v13	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v13.fasta	-	m1: T55P
+6xzu_m_v14	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v14.fasta	-	m2: T29E, R57D
+6xzu_m_v15	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v15.fasta	-	m3: T55N, T58H, N106Q
+6xzu_m_v16	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v16.fasta	-	m1: F30R
+6xzu_m_v17	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v17.fasta	-	m2: T103Q, K108T
+6xzu_m_v18	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v18.fasta	-	m3: G27F, A34N, N106Y
+6xzu_m_v19	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v19.fasta	-	m1: G27W
+6xzu_m_v20	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v20.fasta	-	m2: D32I, T58H

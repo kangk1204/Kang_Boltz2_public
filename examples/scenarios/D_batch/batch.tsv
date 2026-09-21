@@ -1,0 +1,4 @@
+name	antigen	nanobody	reference	hotspot	notes
+scnD_wt	examples/scenarios/A_nanobody/target.fasta	examples/scenarios/A_nanobody/nanobody.fasta	examples/demo_reference_1MEL_AB.cif	-	나노바디 야생형 (DockQ 계산)
+scnD_m2	examples/scenarios/A_nanobody/target.fasta	examples/mutants/m2_CDR2_I56A.fasta	examples/demo_reference_1MEL_AB.cif	-	CDR2 변이 (참조와 서열 달라 자동 mismatch 재시도)
+scnD_vh	examples/scenarios/B_fv/target.fasta	examples/scenarios/B_fv/vh.fasta	-	-	Fv VH 단독(참고)

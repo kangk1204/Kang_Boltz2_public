@@ -1,0 +1,17 @@
+name	antigen	nanobody	reference	notes
+cAb-Lys3_WT	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_WT.fasta	inputs/reference_example_1MEL.cif	야생형 대조
+cAb-Lys3_v01	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v01.fasta	-	S99N
+cAb-Lys3_v02	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v02.fasta	-	S113F, Y117K
+cAb-Lys3_v03	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v03.fasta	-	H110T, T114V, G116Y
+cAb-Lys3_v04	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v04.fasta	-	A103D
+cAb-Lys3_v05	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v05.fasta	-	D98N, G116F
+cAb-Lys3_v06	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v06.fasta	-	A96K, S99V, G111P
+cAb-Lys3_v07	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v07.fasta	-	G109M
+cAb-Lys3_v08	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v08.fasta	-	E107W, G109E
+cAb-Lys3_v09	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v09.fasta	-	D98N, Y106W, D120Y
+cAb-Lys3_v10	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v10.fasta	-	Y105S
+cAb-Lys3_v11	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v11.fasta	-	T100M, Y117A
+cAb-Lys3_v12	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v12.fasta	-	E107F, G111R, Y119R
+cAb-Lys3_v13	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v13.fasta	-	G115Y
+cAb-Lys3_v14	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v14.fasta	-	S99W, L112S
+cAb-Lys3_v15	inputs/target.fasta	examples/cdr_library_cdr3/cAb-Lys3_v15.fasta	-	L112M, G116W, S121Q

@@ -1,0 +1,22 @@
+name	antigen	nanobody	reference	notes
+8qf4_m_WT	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_WT.fasta	-	m0: 야생형 대조
+8qf4_m_v01	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v01.fasta	-	m1: R101V
+8qf4_m_v02	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v02.fasta	-	m2: P103E, Q113L
+8qf4_m_v03	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v03.fasta	-	m3: F31N, N58L, T60K
+8qf4_m_v04	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v04.fasta	-	m1: V107E
+8qf4_m_v05	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v05.fasta	-	m2: S59V, D108I
+8qf4_m_v06	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v06.fasta	-	m3: R29G, F31P, V107W
+8qf4_m_v07	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v07.fasta	-	m1: A100K
+8qf4_m_v08	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v08.fasta	-	m2: Y34E, A35L
+8qf4_m_v09	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v09.fasta	-	m3: A100H, R101A, G112L
+8qf4_m_v10	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v10.fasta	-	m1: Q113R
+8qf4_m_v11	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v11.fasta	-	m2: I53Q, N58A
+8qf4_m_v12	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v12.fasta	-	m3: T60M, A100I, Q113W
+8qf4_m_v13	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v13.fasta	-	m1: Q113A
+8qf4_m_v14	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v14.fasta	-	m2: S32E, T60N
+8qf4_m_v15	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v15.fasta	-	m3: S32H, G112V, D116N
+8qf4_m_v16	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v16.fasta	-	m1: G57V
+8qf4_m_v17	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v17.fasta	-	m2: R29I, F31Y
+8qf4_m_v18	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v18.fasta	-	m3: R29P, A35N, I109A
+8qf4_m_v19	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v19.fasta	-	m1: N58K
+8qf4_m_v20	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v20.fasta	-	m2: K111I, D116V

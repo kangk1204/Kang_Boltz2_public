@@ -1,0 +1,22 @@
+name	antigen	nanobody	reference	notes
+7oao_m_WT	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_WT.fasta	-	m0: 야생형 대조
+7oao_m_v01	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v01.fasta	-	m1: D55L
+7oao_m_v02	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v02.fasta	-	m2: G56M, T58Y
+7oao_m_v03	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v03.fasta	-	m3: T28W, L98P, A103S
+7oao_m_v04	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v04.fasta	-	m1: S105D
+7oao_m_v05	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v05.fasta	-	m2: L29W, P108E
+7oao_m_v06	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v06.fasta	-	m3: G30A, I57W, T101R
+7oao_m_v07	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v07.fasta	-	m1: G99L
+7oao_m_v08	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v08.fasta	-	m2: I51Q, R52P
+7oao_m_v09	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v09.fasta	-	m3: L29T, G56M, A97Y
+7oao_m_v10	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v10.fasta	-	m1: F110H
+7oao_m_v11	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v11.fasta	-	m2: H32S, I51V
+7oao_m_v12	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v12.fasta	-	m3: R31E, A33L, I57V
+7oao_m_v13	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v13.fasta	-	m1: T53N
+7oao_m_v14	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v14.fasta	-	m2: R31G, A33N
+7oao_m_v15	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v15.fasta	-	m3: H32M, N107A, P108H
+7oao_m_v16	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v16.fasta	-	m1: V100L
+7oao_m_v17	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v17.fasta	-	m2: G30T, S105A
+7oao_m_v18	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v18.fasta	-	m3: H32T, D55W, T58N
+7oao_m_v19	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v19.fasta	-	m1: T101W
+7oao_m_v20	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v20.fasta	-	m2: F54N, A97E

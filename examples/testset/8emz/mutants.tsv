@@ -1,0 +1,22 @@
+name	antigen	nanobody	reference	notes
+8emz_m_WT	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_WT.fasta	-	m0: 야생형 대조
+8emz_m_v01	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v01.fasta	-	m1: R111A
+8emz_m_v02	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v02.fasta	-	m2: R114D, D116V
+8emz_m_v03	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v03.fasta	-	m3: S30P, G55S, A97V
+8emz_m_v04	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v04.fasta	-	m1: Y109M
+8emz_m_v05	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v05.fasta	-	m2: S57L, Y110T
+8emz_m_v06	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v06.fasta	-	m3: I51Q, S54V, A98Q
+8emz_m_v07	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v07.fasta	-	m1: S30M
+8emz_m_v08	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v08.fasta	-	m2: G102H, A103I
+8emz_m_v09	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v09.fasta	-	m3: F28G, S31N, S108E
+8emz_m_v10	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v10.fasta	-	m1: S54P
+8emz_m_v11	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v11.fasta	-	m2: Y109M, D116M
+8emz_m_v12	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v12.fasta	-	m3: S108G, Y109G, T112K
+8emz_m_v13	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v13.fasta	-	m1: T112I
+8emz_m_v14	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v14.fasta	-	m2: S52I, T58N
+8emz_m_v15	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v15.fasta	-	m3: G56M, D116P, Y117G
+8emz_m_v16	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v16.fasta	-	m1: I51Q
+8emz_m_v17	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v17.fasta	-	m2: Y109Q, D116Y
+8emz_m_v18	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v18.fasta	-	m3: G56W, T58Q, D107Q
+8emz_m_v19	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v19.fasta	-	m1: Y105G
+8emz_m_v20	examples/testset/8emz/target.fasta	examples/testset/8emz/mutants/8emz_m_v20.fasta	-	m2: F28Y, W53P

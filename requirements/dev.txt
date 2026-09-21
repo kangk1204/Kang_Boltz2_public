@@ -1,0 +1,5 @@
+# 개발·검증용 의존성 (예측/분석 실행에는 필요하지 않다).
+# 설치:  conda run -n boltz2 python -m pip install -r requirements/dev.txt
+# 실행:  conda run -n boltz2 python -m pytest tests/ -q
+#        conda run -n boltz2 python scripts/selftest.py
+pytest>=8

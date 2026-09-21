@@ -1,0 +1,190 @@
+name	antigen	nanobody	reference	notes
+4n9o_m_WT	examples/testset/4n9o/target.fasta	examples/testset/4n9o/nanobody.fasta	-	m0: WT; matched structural-confidence control
+4n9o_m_v01	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v01.fasta	-	m1: S31D
+4n9o_m_v02	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v02.fasta	-	m2: D56M, D112A
+4n9o_m_v03	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v03.fasta	-	m3: R27G, S58F, Y103F
+4n9o_m_v04	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v04.fasta	-	m1: Y32W
+4n9o_m_v05	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v05.fasta	-	m2: A97T, Y103Q
+4n9o_m_v06	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v06.fasta	-	m3: Y32S, G55N, D112F
+4n9o_m_v07	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v07.fasta	-	m1: G110M
+4n9o_m_v08	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v08.fasta	-	m2: N33R, S54A
+4n9o_m_v09	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v09.fasta	-	m3: I51Q, Y111E, H113V
+4n9o_m_v10	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v10.fasta	-	m1: G99S
+4n9o_m_v11	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v11.fasta	-	m2: G101L, I102D
+4n9o_m_v12	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v12.fasta	-	m3: T28E, I51E, S54E
+4n9o_m_v13	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v13.fasta	-	m1: R106I
+4n9o_m_v14	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v14.fasta	-	m2: A97V, G99W
+4n9o_m_v15	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v15.fasta	-	m3: T28D, S30R, S54V
+4n9o_m_v16	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v16.fasta	-	m1: T28N
+4n9o_m_v17	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v17.fasta	-	m2: I51Q, Y103D
+4n9o_m_v18	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v18.fasta	-	m3: F29N, G55R, R106G
+4n9o_m_v19	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v19.fasta	-	m1: G109N
+4n9o_m_v20	examples/testset/4n9o/target.fasta	examples/testset/4n9o/mutants/4n9o_m_v20.fasta	-	m2: R27V, I51A
+5imk_m_WT	examples/testset/5imk/target.fasta	examples/testset/5imk/nanobody.fasta	-	m0: WT; matched structural-confidence control
+5imk_m_v01	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v01.fasta	-	m1: A97P
+5imk_m_v02	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v02.fasta	-	m2: G55K, T58F
+5imk_m_v03	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v03.fasta	-	m3: T58W, G99H, E111Y
+5imk_m_v04	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v04.fasta	-	m1: G26M
+5imk_m_v05	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v05.fasta	-	m2: R27H, Y112I
+5imk_m_v06	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v06.fasta	-	m3: N54F, G105P, D113P
+5imk_m_v07	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v07.fasta	-	m1: S31Y
+5imk_m_v08	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v08.fasta	-	m2: A97K, E111L
+5imk_m_v09	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v09.fasta	-	m3: S30Y, S31T, G55K
+5imk_m_v10	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v10.fasta	-	m1: S30F
+5imk_m_v11	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v11.fasta	-	m2: G56E, D102G
+5imk_m_v12	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v12.fasta	-	m3: S31T, Y32W, D110M
+5imk_m_v13	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v13.fasta	-	m1: G33Q
+5imk_m_v14	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v14.fasta	-	m2: F29W, Y114Q
+5imk_m_v15	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v15.fasta	-	m3: S57G, T58Q, E111R
+5imk_m_v16	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v16.fasta	-	m1: G26D
+5imk_m_v17	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v17.fasta	-	m2: F29D, Y112P
+5imk_m_v18	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v18.fasta	-	m3: G33V, A97E, F108W
+5imk_m_v19	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v19.fasta	-	m1: E111G
+5imk_m_v20	examples/testset/5imk/target.fasta	examples/testset/5imk/mutants/5imk_m_v20.fasta	-	m2: R52W, R100E
+5imm_m_WT	examples/testset/5imm/target.fasta	examples/testset/5imm/nanobody.fasta	-	m0: WT; matched structural-confidence control
+5imm_m_v01	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v01.fasta	-	m1: A97P
+5imm_m_v02	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v02.fasta	-	m2: G55K, T58F
+5imm_m_v03	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v03.fasta	-	m3: T58W, G99H, E111Y
+5imm_m_v04	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v04.fasta	-	m1: G26M
+5imm_m_v05	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v05.fasta	-	m2: R27H, Y112I
+5imm_m_v06	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v06.fasta	-	m3: N54F, G105P, D113P
+5imm_m_v07	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v07.fasta	-	m1: S31Y
+5imm_m_v08	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v08.fasta	-	m2: A97K, E111L
+5imm_m_v09	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v09.fasta	-	m3: S30Y, S31T, G55K
+5imm_m_v10	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v10.fasta	-	m1: S30F
+5imm_m_v11	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v11.fasta	-	m2: G56E, D102G
+5imm_m_v12	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v12.fasta	-	m3: S31T, Y32W, D110M
+5imm_m_v13	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v13.fasta	-	m1: G33Q
+5imm_m_v14	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v14.fasta	-	m2: F29W, Y114Q
+5imm_m_v15	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v15.fasta	-	m3: S57G, T58Q, E111R
+5imm_m_v16	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v16.fasta	-	m1: G26D
+5imm_m_v17	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v17.fasta	-	m2: F29D, Y112P
+5imm_m_v18	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v18.fasta	-	m3: G33V, A97E, F108W
+5imm_m_v19	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v19.fasta	-	m1: E111G
+5imm_m_v20	examples/testset/5imm/target.fasta	examples/testset/5imm/mutants/5imm_m_v20.fasta	-	m2: R52W, R100E
+6xzu_m_WT	examples/testset/6xzu/target.fasta	examples/testset/6xzu/nanobody.fasta	-	m0: WT; matched structural-confidence control
+6xzu_m_v01	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v01.fasta	-	m1: M104P
+6xzu_m_v02	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v02.fasta	-	m2: S28F, L98P
+6xzu_m_v03	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v03.fasta	-	m3: Y53M, R57V, T107N
+6xzu_m_v04	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v04.fasta	-	m1: S28G
+6xzu_m_v05	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v05.fasta	-	m2: S28T, T102P
+6xzu_m_v06	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v06.fasta	-	m3: S28Q, S31N, A101M
+6xzu_m_v07	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v07.fasta	-	m1: S54Y
+6xzu_m_v08	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v08.fasta	-	m2: T29W, K108F
+6xzu_m_v09	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v09.fasta	-	m3: S54P, N97Q, M104P
+6xzu_m_v10	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v10.fasta	-	m1: G27D
+6xzu_m_v11	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v11.fasta	-	m2: G27N, F30Y
+6xzu_m_v12	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v12.fasta	-	m3: G27D, R57Y, T102F
+6xzu_m_v13	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v13.fasta	-	m1: T55P
+6xzu_m_v14	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v14.fasta	-	m2: T29E, R57D
+6xzu_m_v15	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v15.fasta	-	m3: T55N, T58H, N106Q
+6xzu_m_v16	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v16.fasta	-	m1: F30R
+6xzu_m_v17	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v17.fasta	-	m2: T103Q, K108T
+6xzu_m_v18	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v18.fasta	-	m3: G27F, A34N, N106Y
+6xzu_m_v19	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v19.fasta	-	m1: G27W
+6xzu_m_v20	examples/testset/6xzu/target.fasta	examples/testset/6xzu/mutants/6xzu_m_v20.fasta	-	m2: D32I, T58H
+5m13_m_WT	examples/testset/5m13/target.fasta	examples/testset/5m13/nanobody.fasta	-	m0: WT; matched structural-confidence control
+5m13_m_v01	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v01.fasta	-	m1: W102Y
+5m13_m_v02	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v02.fasta	-	m2: L108P, W111P
+5m13_m_v03	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v03.fasta	-	m3: G27I, R58S, G103L
+5m13_m_v04	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v04.fasta	-	m1: Y53N
+5m13_m_v05	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v05.fasta	-	m2: T56W, W102G
+5m13_m_v06	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v06.fasta	-	m3: D28F, T109M, Y115A
+5m13_m_v07	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v07.fasta	-	m1: S106T
+5m13_m_v08	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v08.fasta	-	m2: A100Y, T109M
+5m13_m_v09	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v09.fasta	-	m3: G57N, R58L, A100V
+5m13_m_v10	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v10.fasta	-	m1: Y53M
+5m13_m_v11	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v11.fasta	-	m2: D28V, Y53H
+5m13_m_v12	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v12.fasta	-	m3: A99V, S106D, F112A
+5m13_m_v13	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v13.fasta	-	m1: D28F
+5m13_m_v14	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v14.fasta	-	m2: K30R, Y115A
+5m13_m_v15	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v15.fasta	-	m3: I29V, G57T, F112Y
+5m13_m_v16	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v16.fasta	-	m1: S106K
+5m13_m_v17	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v17.fasta	-	m2: G27N, S106V
+5m13_m_v18	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v18.fasta	-	m3: S55N, T59R, T109Q
+5m13_m_v19	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v19.fasta	-	m1: Y113A
+5m13_m_v20	examples/testset/5m13/target.fasta	examples/testset/5m13/mutants/5m13_m_v20.fasta	-	m2: S33Q, Q105K
+8qf4_m_WT	examples/testset/8qf4/target.fasta	examples/testset/8qf4/nanobody.fasta	-	m0: WT; matched structural-confidence control
+8qf4_m_v01	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v01.fasta	-	m1: R101V
+8qf4_m_v02	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v02.fasta	-	m2: P103E, Q113L
+8qf4_m_v03	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v03.fasta	-	m3: F31N, N58L, T60K
+8qf4_m_v04	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v04.fasta	-	m1: V107E
+8qf4_m_v05	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v05.fasta	-	m2: S59V, D108I
+8qf4_m_v06	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v06.fasta	-	m3: R29G, F31P, V107W
+8qf4_m_v07	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v07.fasta	-	m1: A100K
+8qf4_m_v08	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v08.fasta	-	m2: Y34E, A35L
+8qf4_m_v09	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v09.fasta	-	m3: A100H, R101A, G112L
+8qf4_m_v10	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v10.fasta	-	m1: Q113R
+8qf4_m_v11	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v11.fasta	-	m2: I53Q, N58A
+8qf4_m_v12	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v12.fasta	-	m3: T60M, A100I, Q113W
+8qf4_m_v13	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v13.fasta	-	m1: Q113A
+8qf4_m_v14	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v14.fasta	-	m2: S32E, T60N
+8qf4_m_v15	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v15.fasta	-	m3: S32H, G112V, D116N
+8qf4_m_v16	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v16.fasta	-	m1: G57V
+8qf4_m_v17	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v17.fasta	-	m2: R29I, F31Y
+8qf4_m_v18	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v18.fasta	-	m3: R29P, A35N, I109A
+8qf4_m_v19	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v19.fasta	-	m1: N58K
+8qf4_m_v20	examples/testset/8qf4/target.fasta	examples/testset/8qf4/mutants/8qf4_m_v20.fasta	-	m2: K111I, D116V
+6her_m_WT	examples/testset/6her/target.fasta	examples/testset/6her/nanobody.fasta	-	m0: WT; matched structural-confidence control
+6her_m_v01	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v01.fasta	-	m1: T52P
+6her_m_v02	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v02.fasta	-	m2: S53Q, S54M
+6her_m_v03	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v03.fasta	-	m3: T28S, S54K, R108Q
+6her_m_v04	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v04.fasta	-	m1: H113G
+6her_m_v05	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v05.fasta	-	m2: F29T, S31H
+6her_m_v06	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v06.fasta	-	m3: T52V, K57S, H113V
+6her_m_v07	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v07.fasta	-	m1: S30K
+6her_m_v08	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v08.fasta	-	m2: S31Q, I102K
+6her_m_v09	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v09.fasta	-	m3: R106P, R108H, H113G
+6her_m_v10	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v10.fasta	-	m1: D56F
+6her_m_v11	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v11.fasta	-	m2: S58R, G99H
+6her_m_v12	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v12.fasta	-	m3: R98Y, G101T, G109V
+6her_m_v13	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v13.fasta	-	m1: H113K
+6her_m_v14	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v14.fasta	-	m2: S58Y, R106I
+6her_m_v15	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v15.fasta	-	m3: F29V, S53Q, I104F
+6her_m_v16	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v16.fasta	-	m1: S54M
+6her_m_v17	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v17.fasta	-	m2: S30L, I105S
+6her_m_v18	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v18.fasta	-	m3: S54T, D56K, G101I
+6her_m_v19	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v19.fasta	-	m1: K57W
+6her_m_v20	examples/testset/6her/target.fasta	examples/testset/6her/mutants/6her_m_v20.fasta	-	m2: I51V, A107H
+9ho5_m_WT	examples/testset/9ho5/target.fasta	examples/testset/9ho5/nanobody.fasta	-	m0: WT; matched structural-confidence control
+9ho5_m_v01	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v01.fasta	-	m1: G55L
+9ho5_m_v02	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v02.fasta	-	m2: P99D, V102F
+9ho5_m_v03	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v03.fasta	-	m3: D54N, P100E, I101W
+9ho5_m_v04	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v04.fasta	-	m1: D54T
+9ho5_m_v05	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v05.fasta	-	m2: G55I, I101S
+9ho5_m_v06	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v06.fasta	-	m3: S56W, V102E, D108P
+9ho5_m_v07	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v07.fasta	-	m1: I101H
+9ho5_m_v08	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v08.fasta	-	m2: N105A, Y109N
+9ho5_m_v09	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v09.fasta	-	m3: L51T, D53R, V104H
+9ho5_m_v10	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v10.fasta	-	m1: L51S
+9ho5_m_v11	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v11.fasta	-	m2: L51D, N96H
+9ho5_m_v12	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v12.fasta	-	m3: G26V, A97G, T107Q
+9ho5_m_v13	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v13.fasta	-	m1: G55K
+9ho5_m_v14	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v14.fasta	-	m2: P99F, I101D
+9ho5_m_v15	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v15.fasta	-	m3: G55V, N96D, P99A
+9ho5_m_v16	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v16.fasta	-	m1: V98E
+9ho5_m_v17	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v17.fasta	-	m2: S56P, P100I
+9ho5_m_v18	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v18.fasta	-	m3: D54V, A97M, V104A
+9ho5_m_v19	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v19.fasta	-	m1: A106V
+9ho5_m_v20	examples/testset/9ho5/target.fasta	examples/testset/9ho5/mutants/9ho5_m_v20.fasta	-	m2: V98I, I101N
+7oao_m_WT	examples/testset/7oao/target.fasta	examples/testset/7oao/nanobody.fasta	-	m0: WT; matched structural-confidence control
+7oao_m_v01	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v01.fasta	-	m1: D55L
+7oao_m_v02	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v02.fasta	-	m2: G56M, T58Y
+7oao_m_v03	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v03.fasta	-	m3: T28W, L98P, A103S
+7oao_m_v04	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v04.fasta	-	m1: S105D
+7oao_m_v05	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v05.fasta	-	m2: L29W, P108E
+7oao_m_v06	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v06.fasta	-	m3: G30A, I57W, T101R
+7oao_m_v07	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v07.fasta	-	m1: G99L
+7oao_m_v08	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v08.fasta	-	m2: I51Q, R52P
+7oao_m_v09	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v09.fasta	-	m3: L29T, G56M, A97Y
+7oao_m_v10	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v10.fasta	-	m1: F110H
+7oao_m_v11	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v11.fasta	-	m2: H32S, I51V
+7oao_m_v12	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v12.fasta	-	m3: R31E, A33L, I57V
+7oao_m_v13	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v13.fasta	-	m1: T53N
+7oao_m_v14	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v14.fasta	-	m2: R31G, A33N
+7oao_m_v15	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v15.fasta	-	m3: H32M, N107A, P108H
+7oao_m_v16	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v16.fasta	-	m1: V100L
+7oao_m_v17	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v17.fasta	-	m2: G30T, S105A
+7oao_m_v18	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v18.fasta	-	m3: H32T, D55W, T58N
+7oao_m_v19	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v19.fasta	-	m1: T101W
+7oao_m_v20	examples/testset/7oao/target.fasta	examples/testset/7oao/mutants/7oao_m_v20.fasta	-	m2: F54N, A97E
