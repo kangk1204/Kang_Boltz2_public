@@ -206,6 +206,9 @@ class SetupRuntimeTests(unittest.TestCase):
         self.assertEqual(got.returncode, 0, got.stderr + got.stdout)
         self.assert_pointer(repo, env_root / "boltz2")
         self.assertIn("boltz2\t" + str(env_root / "boltz2"), (repo.parent / "envs.tsv").read_text())
+        reports = list((repo / "outputs").glob("setup_verify_*/report"))
+        self.assertEqual(len(reports), 1)
+        self.assertIn(f"설치 검증 리포트 열기: ./run.sh --serve {reports[0]}", got.stdout)
 
     def test_existing_default_chooses_numbered_fresh_env(self) -> None:
         repo, fake_bin, env_root = self.make_repo(envs=("boltz2",))

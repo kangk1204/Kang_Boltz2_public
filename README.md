@@ -42,6 +42,10 @@ bash setup.sh --verify && ./run.sh --doctor
 # 설치 + 실제 예측·분석·리포트 검증이 성공하면 환경 점검까지 실행
 ```
 
+설치 검증 리포트는 `outputs/setup_verify_<실행시각>/report/`에 생성됩니다.
+설치 완료 시 출력되는 `설치 검증 리포트 열기` 명령으로 열 수 있습니다.
+`--doctor`는 환경만 점검하며, 아래 실행 예시의 `first_run` 결과를 생성하지는 않습니다.
+
 - 환경·가중치·다운로드 임시 파일을 위해 수십 GB의 여유 공간을 준비하세요. 설치 시간은 네트워크에 따라 달라집니다.
 - **필요한 도구는 기본으로 함께 설치됩니다**: matplotlib(그림), ANARCI+HMMER(CDR 주석/변이 생성), DockQ(참조 구조 평가). 굳이 빼려면 `--no-hmmer` / `--no-anarci` / `--no-dockq` 를 붙입니다.
 - RTX 5060 Ti에서 실제 예측을 검증했습니다. 사용하는 GPU·드라이버는 `nvidia-smi`와 `--doctor`, `--verify`로 확인하세요.
@@ -128,10 +132,15 @@ KVFGRCELAAAMKRHGLDNYRGYSLGNWVCAAKFESNFNTQATNRNTDGSTDYGILQINSRW...
 ## 3. 실행
 
 ```bash
-./run.sh --name first_run
-./run.sh --serve outputs/first_run/report   # 브라우저로 열기 (Ctrl+C로 종료)
+./run.sh --name first_run &&
+  ./run.sh --serve outputs/first_run/report # 예측·분석·리포트 생성 성공 후 열기 (Ctrl+C로 종료)
 ./run.sh --list                             # 지금까지 돌린 것 목록
 ```
+
+`--serve`는 기존 리포트를 여는 명령입니다. `index.html`이 없으면 먼저 `./run.sh --list`로
+실제 실행 이름과 리포트 유무를 확인하세요. 시나리오 B를 `--name scn_B`로 완료했다면
+`./run.sh --serve outputs/scn_B/report`를 사용합니다. `first_run`이라는 이름의 결과를 열려면
+위의 `./run.sh --name first_run`이 먼저 완료되어야 합니다.
 
 원격 Ubuntu 서버에서는 위 `--serve`를 실행한 뒤, **본인 PC의 터미널**에서
 `ssh -L 8765:127.0.0.1:8765 사용자@서버`를 실행하고 브라우저로 `http://127.0.0.1:8765`를 엽니다.

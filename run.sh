@@ -1076,8 +1076,11 @@ do_cdr_library() {
 
 do_serve() {
   local dir="$SERVE_DIR"
-  [[ -d "$dir" ]] || dir="$(dirname "$dir")"
-  [[ -f "$dir/index.html" ]] || die "index.html 이 없습니다: $dir"
+  [[ -f "$dir" ]] && dir="$(dirname -- "$dir")"
+  [[ -f "$dir/index.html" ]] || die "리포트 index.html 이 없습니다: $dir/index.html
+  --doctor 는 환경 점검만, --serve 는 이미 생성된 리포트 열기만 수행합니다.
+  완료된 리포트 확인: ./run.sh --list
+  first_run 생성 예시: ./run.sh --name first_run (완료 후 리포트를 여세요)"
   log "웹서버 시작: http://127.0.0.1:$PORT/  (Ctrl+C 종료, 로컬 접속만 허용)"
   ( cd "$dir" && "$PY" -m http.server "$PORT" --bind 127.0.0.1 )
 }

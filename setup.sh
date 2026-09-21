@@ -335,3 +335,6 @@ $(ok "설치 완료")
   이 env 를 자동 사용하도록 $ROOT/.boltz_env 에 기록했습니다.
   (다른 env 를 쓰려면 BOLTZ_ENV=<경로> ./run.sh ... 로 덮어쓰세요.)
 EOF
+if [[ "$VERIFY" == "1" ]]; then
+  printf '설치 검증 리포트 열기: ./run.sh --serve %q\n' "$ROOT/outputs/$verify_name/report"
+fi
