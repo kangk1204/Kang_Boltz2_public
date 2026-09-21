@@ -90,7 +90,9 @@ tr.row.sel{background:#e3f0ff}
 .kpi .n{font-size:11px;color:var(--muted)}
 .kpi .v{font-size:17px;font-weight:600}
 .backbtn{margin:6px 0 12px}
-#molstar-viewer{position:relative}
+.batch-nav{position:sticky;top:0;z-index:10;padding:10px 0;background:var(--bg);border-bottom:1px solid var(--line)}
+.batch-nav .backbtn{margin:0;font-size:14px;font-weight:600;padding:8px 14px}
+#molstar-viewer{position:relative;z-index:0}
 .pill{display:inline-block;font-size:11px;border:1px solid var(--line);border-radius:20px;padding:1px 8px;color:#555;background:#fafbfc;margin-left:6px}
 .rank{color:#999;font-size:11px}
 """
@@ -102,6 +104,9 @@ const COLS = __COLS__;          // [{key,label,type,fmt,higherBetter}]
 let sortKey = __SORTKEY__, sortDir = -1, filter = '';
 let selected = null;
 let pendingSortFocus = null;
+let tableScrollY = 0;
+let detailVersion = 0;
+let returningToTable = false;
 
 function fmtVal(v, type, nd) {
   if (v === null || v === undefined || v === '') return '-';
@@ -189,10 +194,19 @@ async function showOverlay() {
   try { await RB.load('main', j.overlay, 'chain-id'); }
   catch (e) { RB.diag('showOverlay failed: ' + e.message, true); }
 }
-async function openJob(job) {
-  selected = job;
+async function openJob(job, { pushHistory = true } = {}) {
+  if (!Object.prototype.hasOwnProperty.call(JOBS, job)) return;
   const j = JOBS[job];
   if (!j) return;
+  const fromTable = document.getElementById('table-view').style.display !== 'none';
+  if (fromTable) tableScrollY = window.scrollY;
+  const hash = '#job=' + encodeURIComponent(job);
+  if (pushHistory && location.hash !== hash) {
+    history.pushState({ boltzBatchFromTable: fromTable }, '', hash);
+  }
+  const version = ++detailVersion;
+  selected = job;
+  returningToTable = false;
   document.getElementById('table-view').style.display = 'none';
   document.getElementById('detail').style.display = 'block';
   document.getElementById('detail-title').textContent = job + (j.subtitle ? ' - ' + j.subtitle : '');
@@ -210,6 +224,10 @@ async function openJob(job) {
   const card = document.getElementById('viewer-card');
   const missing = document.getElementById('viewer-missing');
   const host = document.getElementById('molstar-viewer');
+  // Navigation stays usable while the 3D viewer is loading.
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  document.querySelector('.batch-nav .backbtn').focus({ preventScroll: true });
+  renderTable();
   if (!j.cif) {
     if (missing) missing.style.display = 'block';
     if (host) host.style.display = 'none';
@@ -221,18 +239,44 @@ async function openJob(job) {
     RB.diag('no structure for ' + job + ' (미완료/실패 job)');
   } else {
     if (missing) missing.style.display = 'none';
-    if (host) host.style.display = 'block';
+    if (host) { host.style.display = 'block'; host.style.visibility = 'hidden'; }
     try { await RB.load('main', j.cif, 'plddt-confidence'); }
-    catch (e) { RB.diag('openJob failed: ' + e.message, true); }
+    catch (e) { if (version === detailVersion) RB.diag('openJob failed: ' + e.message, true); }
+    if (version === detailVersion && host) host.style.visibility = 'visible';
   }
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  renderTable();
 }
-function backToTable() {
+function showTable() {
+  ++detailVersion;
+  returningToTable = false;
   document.getElementById('detail').style.display = 'none';
   document.getElementById('table-view').style.display = 'block';
   renderTable();
+  const row = Array.from(document.querySelectorAll('#tbody tr[data-job]')).find(tr => tr.dataset.job === selected);
+  if (row) row.focus({ preventScroll: true });
+  window.scrollTo({ top: tableScrollY, behavior: 'instant' });
 }
+function backToTable() {
+  if (returningToTable) return;
+  if (history.state && history.state.boltzBatchFromTable) {
+    returningToTable = true;
+    history.back();
+  } else {
+    history.replaceState(null, '', location.pathname + location.search);
+    showTable();
+  }
+}
+function restoreBatchView() {
+  let job = null;
+  try {
+    if (location.hash.startsWith('#job=')) job = decodeURIComponent(location.hash.slice(5));
+  } catch (_) { /* A malformed bookmark falls back to the table. */ }
+  if (job !== null && Object.prototype.hasOwnProperty.call(JOBS, job)) {
+    openJob(job, { pushHistory: false });
+  } else {
+    showTable();
+  }
+}
+window.addEventListener('popstate', restoreBatchView);
 document.addEventListener('DOMContentLoaded', () => {
   renderTable();
   const tb = document.getElementById('tbody');
@@ -257,6 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (cell) { e.preventDefault(); setSort(cell.dataset.sortKey, true); }
     });
   }
+  restoreBatchView();
 });
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-theme]');
@@ -1150,7 +1195,9 @@ def main():
 </div>
 
 <div id="detail">
-<button class="btn backbtn" onclick="backToTable()">← 표로 돌아가기</button>
+<nav class="batch-nav" aria-label="배치 결과 이동">
+<button type="button" class="btn backbtn" onclick="backToTable()">← 전체 테이블로 돌아가기</button>
+</nav>
 <h2 style="margin-top:0" id="detail-title"></h2>
 <div class="card" id="viewer-card">
 <div id="viewer-missing" class="note" style="display:none;padding:14px 4px">
@@ -1178,7 +1225,7 @@ def main():
 <div class="card"><h3 style="margin-top:0">분석 그림</h3>
 <div class="grid" id="detail-figs"></div></div>
 <div class="card" id="detail-tables"></div>
-<button class="btn backbtn" onclick="backToTable()">← 표로 돌아가기</button>
+<button type="button" class="btn backbtn" onclick="backToTable()">← 전체 테이블로 돌아가기</button>
 </div>
 
 <details><summary>지표 해석 가이드 펼치기</summary>{INTERPRET_GUIDE}</details>

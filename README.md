@@ -333,6 +333,19 @@ SAMPLES=1 ./run.sh --batch examples/scenarios/E_cdr_nanobody/cdr_library.tsv --n
 인터페이스/루프 신뢰도 하락**이지 실제 결합력 손실이 아닙니다. WT와 변이는 construct·MSA 정책·
 sample 수·seed·모델 선택 기준을 맞춰야 비교가 성립합니다.
 
+테이블의 행을 누르면 상세 보기가 열립니다. 상단에 고정된 **← 전체 테이블로 돌아가기** 버튼이나
+브라우저 **뒤로가기**로 테이블에 복귀할 수 있으며, 검색어와 정렬 상태는 유지됩니다.
+브라우저 앞으로가기로 상세 보기를 다시 열 수도 있습니다.
+
+코드를 업데이트한 뒤 기존 결과에 새 화면을 적용하려면 **예측 없이 배치 리포트만 재생성**하세요.
+아래 `batch_scn_E`는 실행할 때 지정한 배치 이름에 맞추면 됩니다.
+
+```bash
+./run.sh --batch-report outputs/batch_scn_E
+./run.sh --serve outputs/batch_scn_E/report
+```
+이미 열어 둔 브라우저 탭은 새로고침하세요.
+
 ---
 
 ### 시나리오 F. CDR 변이 — 항체 (VH만 / VL만 / 둘 다)

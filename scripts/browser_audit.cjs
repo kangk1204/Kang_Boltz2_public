@@ -620,24 +620,198 @@ async function auditBatch(ctx, rel, kind) {
     if (failed.skipped) checks.push(skip(`${kind} failed row diagnostic`, failed.reason));
     else if (!failed.missing || !failed.hasDetail) throw new Error(`failed row did not expose diagnostic detail for ${failed.job}`);
     else checks.push(ok(`${kind} failed row detail opens diagnostic`, failed));
+    await evalValue(page, `backToTable()`);
+    await waitForExpr(page, `getComputedStyle(document.querySelector('#table-view')).display !== 'none' && getComputedStyle(document.querySelector('#detail')).display === 'none'`, 5000, `${kind} return to table after failed row diagnostic`);
 
     const valid = await evalValue(page, `(async () => {
       const row = ROWS.find(r => r.status === 'ok' && JOBS[r.job] && JOBS[r.job].cif);
       if (!row) return { skipped: true, reason: 'no valid embedded-CIF rows in this report' };
-      await openJob(row.job);
-      return { skipped: false, job: row.job };
+      const tr = Array.from(document.querySelectorAll('#tbody tr[data-job]')).find(el => el.dataset.job === row.job);
+      if (!tr) return { skipped: true, reason: 'valid embedded-CIF row is filtered out of the rendered table' };
+      tr.scrollIntoView({ block: 'center' });
+      tr.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const tableDisplay = getComputedStyle(document.querySelector('#table-view')).display;
+      const detailDisplay = getComputedStyle(document.querySelector('#detail')).display;
+      const title = document.querySelector('#detail-title')?.textContent || '';
+      return { skipped: false, job: row.job, tableDisplay, detailDisplay, title, hash: location.hash };
     })()`);
     if (valid.skipped) {
       checks.push(skip(`${kind} valid row Mol* load`, valid.reason));
     } else {
+      await waitForExpr(page, `getComputedStyle(document.querySelector('#detail')).display !== 'none' && getComputedStyle(document.querySelector('#table-view')).display === 'none' && (document.querySelector('#detail-title')?.textContent || '').includes(${JSON.stringify(valid.job)})`, 5000, `${kind} row click opens detail`);
+      checks.push(ok(`${kind} row click opens inline detail`, valid));
       const mol = await assertMolLoaded(page, `${kind} valid row ${valid.job}`);
       checks.push(ok(`${kind} valid row Mol* load`, { ...valid, ...mol }));
       const shot = await screenshot(page, path.join(ctx.out, `${kind}.png`));
       checks.push(ok(`${kind} readable screenshot`, { screenshot: shot }));
-      await evalValue(page, `backToTable()`);
-      const back = await evalValue(page, `getComputedStyle(document.querySelector('#table-view')).display !== 'none' && getComputedStyle(document.querySelector('#detail')).display === 'none'`);
-      if (!back) throw new Error('back navigation did not return to table view');
-      checks.push(ok(`${kind} back navigation`));
+      await evalValue(page, `history.back()`);
+      await waitForExpr(page, `getComputedStyle(document.querySelector('#table-view')).display !== 'none' && getComputedStyle(document.querySelector('#detail')).display === 'none'`, 5000, `${kind} browser Back restores table`);
+      checks.push(ok(`${kind} browser Back restores table`, { job: valid.job }));
+      await evalValue(page, `history.forward()`);
+      await waitForExpr(page, `getComputedStyle(document.querySelector('#detail')).display !== 'none' && getComputedStyle(document.querySelector('#table-view')).display === 'none' && (document.querySelector('#detail-title')?.textContent || '').includes(${JSON.stringify(valid.job)})`, 5000, `${kind} browser Forward restores detail`);
+      checks.push(ok(`${kind} browser Forward restores detail`, { job: valid.job }));
+
+      const stickyReturn = await evalValue(page, `(async () => {
+        const nav = document.querySelector('.batch-nav');
+        if (!nav) return { ok: false, error: 'missing .batch-nav' };
+        window.scrollTo(0, Math.max(650, document.body.scrollHeight - innerHeight - 40));
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const btn = nav.querySelector('button, [role="button"], a, .backbtn');
+        if (!btn) return { ok: false, error: 'missing return control inside .batch-nav' };
+        const r = btn.getBoundingClientRect();
+        const x = Math.max(1, Math.min(innerWidth - 1, r.left + r.width / 2));
+        const y = Math.max(1, Math.min(innerHeight - 1, r.top + r.height / 2));
+        const hit = document.elementFromPoint(x, y);
+        const clickable = !!(hit && (hit === btn || btn.contains(hit) || hit.closest('.batch-nav') === nav));
+        if (clickable) {
+          hit.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y }));
+        }
+        return {
+          ok: clickable,
+          top: Math.round(r.top),
+          bottom: Math.round(r.bottom),
+          viewportHeight: innerHeight,
+          hit: hit ? (hit.tagName + (hit.className ? '.' + String(hit.className).replace(/\\s+/g, '.') : '')) : null
+        };
+      })()`);
+      if (!stickyReturn.ok) throw new Error(stickyReturn.error || `sticky return control is not clickable: ${JSON.stringify(stickyReturn)}`);
+      await waitForExpr(page, `getComputedStyle(document.querySelector('#table-view')).display !== 'none' && getComputedStyle(document.querySelector('#detail')).display === 'none'`, 5000, `${kind} sticky return restores table`);
+      checks.push(ok(`${kind} sticky return remains clickable when scrolled`, stickyReturn));
+
+      const preserve = await evalValue(page, `(async () => {
+        const waitForTable = async () => {
+          for (let i = 0; i < 40; i++) {
+            if (getComputedStyle(document.querySelector('#table-view')).display !== 'none' &&
+                getComputedStyle(document.querySelector('#detail')).display === 'none') return true;
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          return false;
+        };
+        const input = document.querySelector('#batch-search');
+        const row = ROWS.find(r => r.status === 'ok' && JOBS[r.job] && JOBS[r.job].cif);
+        if (!input || !row) return { ok: false, error: 'missing search input or valid row' };
+        const sortBtn = document.querySelector('#thead [data-sort-key]');
+        if (!sortBtn) return { ok: false, error: 'missing sortable control' };
+        sortBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const expectedSortKey = sortKey;
+        const expectedSortDir = sortDir;
+        input.value = row.job;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const visibleBefore = Array.from(document.querySelectorAll('#tbody tr[data-job]')).map(tr => tr.dataset.job);
+        const tr = document.querySelector('#tbody tr[data-job]');
+        if (!tr) return { ok: false, error: 'filter hid every row', query: row.job };
+        tr.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        backToTable();
+        const returned = await waitForTable();
+        const visibleAfter = Array.from(document.querySelectorAll('#tbody tr[data-job]')).map(el => el.dataset.job);
+        return {
+          ok: input.value === row.job && filter === row.job && sortKey === expectedSortKey && sortDir === expectedSortDir &&
+            visibleBefore.join('\\u0000') === visibleAfter.join('\\u0000') &&
+            returned,
+          query: row.job,
+          expectedSortKey,
+          expectedSortDir,
+          actualSortKey: sortKey,
+          actualSortDir: sortDir,
+          visibleBefore,
+          visibleAfter,
+          returned,
+          hash: location.hash
+        };
+      })()`);
+      if (!preserve.ok) throw new Error(preserve.error || `return did not preserve filter/sort: ${JSON.stringify(preserve)}`);
+      await waitForExpr(page, `getComputedStyle(document.querySelector('#table-view')).display !== 'none' && getComputedStyle(document.querySelector('#detail')).display === 'none'`, 5000, `${kind} preserved-state return reaches table`);
+      checks.push(ok(`${kind} return preserves filter and sort`, preserve));
+
+      const asyncBack = await evalValue(page, `(async () => {
+        const waitForTable = async () => {
+          for (let i = 0; i < 40; i++) {
+            if (getComputedStyle(document.querySelector('#table-view')).display !== 'none' &&
+                getComputedStyle(document.querySelector('#detail')).display === 'none') return true;
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          return false;
+        };
+        const row = ROWS.find(r => r.status === 'ok' && JOBS[r.job] && JOBS[r.job].cif);
+        if (!row || !window.RB || typeof RB.load !== 'function') return { skipped: true, reason: 'requires a valid embedded-CIF row and RB.load' };
+        const input = document.querySelector('#batch-search');
+        if (input) {
+          input.value = '';
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const originalLoad = RB.load;
+        let release;
+        let loadStarted = false;
+        let loadSettled = false;
+        try {
+          RB.load = () => new Promise(resolve => {
+            loadStarted = true;
+            release = () => {
+              loadSettled = true;
+              resolve({ browserAudit: true });
+            };
+          });
+          const tr = Array.from(document.querySelectorAll('#tbody tr[data-job]')).find(el => el.dataset.job === row.job);
+          if (!tr) return { skipped: true, reason: 'valid row not present after clearing filter' };
+          tr.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const detailShown = getComputedStyle(document.querySelector('#detail')).display !== 'none';
+          backToTable();
+          const tableBeforeRelease = await waitForTable();
+          const maxScroll = Math.max(0, document.documentElement.scrollHeight - innerHeight);
+          window.scrollTo(0, Math.min(420, maxScroll));
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const scrollBeforeRelease = Math.round(scrollY);
+          if (release) release();
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const tableAfterRelease = getComputedStyle(document.querySelector('#table-view')).display !== 'none';
+          const detailAfterRelease = getComputedStyle(document.querySelector('#detail')).display !== 'none';
+          const scrollAfterRelease = Math.round(scrollY);
+          return {
+            skipped: false,
+            job: row.job,
+            loadStarted,
+            loadSettled,
+            detailShown,
+            tableBeforeRelease,
+            tableAfterRelease,
+            detailAfterRelease,
+            scrollBeforeRelease,
+            scrollAfterRelease,
+            scrollStable: Math.abs(scrollAfterRelease - scrollBeforeRelease) <= 4
+          };
+        } finally {
+          RB.load = originalLoad;
+        }
+      })()`);
+      if (asyncBack.skipped) checks.push(skip(`${kind} unresolved load return race`, asyncBack.reason));
+      else if (!asyncBack.loadStarted || !asyncBack.loadSettled || !asyncBack.detailShown || !asyncBack.tableBeforeRelease || !asyncBack.tableAfterRelease || asyncBack.detailAfterRelease || !asyncBack.scrollStable) {
+        throw new Error(`unresolved RB.load return race failed: ${JSON.stringify(asyncBack)}`);
+      } else {
+        checks.push(ok(`${kind} unresolved load return race stays on table`, asyncBack));
+      }
+    }
+
+    const route = await evalValue(page, `(() => {
+      const routeRows = ROWS.filter(r => JOBS[r.job]);
+      const row = routeRows.find((r, i) => i > 0 && /[^\\x00-\\x7f]|[#&?\\s]/.test(r.job)) || routeRows[1] || routeRows[0];
+      if (!row) return { skipped: true, reason: 'no job available for hash routing checks' };
+      return { skipped: false, job: row.job, encodedHash: '#job=' + encodeURIComponent(row.job) };
+    })()`);
+    if (route.skipped) {
+      checks.push(skip(`${kind} initial hash routing`, route.reason));
+    } else {
+      await page.send('Page.navigate', { url: `${url}?audit-deeplink=1${route.encodedHash}` });
+      await waitForExpr(page, `document.readyState === 'complete' && getComputedStyle(document.querySelector('#detail')).display !== 'none' && (document.querySelector('#detail-title')?.textContent || '').includes(${JSON.stringify(route.job)})`, 10000, `${kind} initial deeplink opens detail`);
+      checks.push(ok(`${kind} initial deeplink opens matching job`, route));
+      await page.send('Page.navigate', { url: `${url}?audit-invalid-hash=1#job=${encodeURIComponent('__browser_audit_missing_job__')}` });
+      await waitForExpr(page, `document.readyState === 'complete' && getComputedStyle(document.querySelector('#table-view')).display !== 'none' && getComputedStyle(document.querySelector('#detail')).display === 'none'`, 10000, `${kind} invalid initial hash falls back to table`);
+      checks.push(ok(`${kind} invalid initial hash falls back to table`));
     }
 
     if (kind === 'target') {
