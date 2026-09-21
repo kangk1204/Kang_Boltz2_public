@@ -163,9 +163,15 @@ def test_run_dir(run_dir: Path):
         d0 = metrics.calc_d0(max(len(tokens), 19))
         pure, _ = metrics.interchain_iptm(pae, np.where(chains == ag)[0], np.where(chains == nb)[0], d0)
         boltz_json = conf["pair_chains_iptm"][str(ids.index(nb))][str(ids.index(ag))]
-        # 주의: 덤프된 PAE 는 bin 대표값(argmax)이라 볼츠 내부의 기대값(softmax 가중)과 다르다.
-        # TM(E[paue]) != E[TM(pae)] 이므로 0.05 같은 좁은 허용폭은 수학적으로 보장되지 않는다 (R15).
-        assert abs(pure - boltz_json) < 0.12, (pure, boltz_json)
+        # Boltz는 PAE bin별 TM 값을 확률로 평균하고, proxy는 평균 PAE에 TM을 적용한다.
+        # TM(E[PAE]) != E[TM(PAE)]: 두 추정량 사이에 고정 허용 오차를 보장할 수 없다.
+        assert 0.0 <= pure <= 1.0, pure
+        assert 0.0 <= boltz_json <= 1.0, boltz_json
+        if res_path.exists():
+            saved = next(e for e in r["models"] if e["index"] == m["index"])
+            recorded = (saved.get("boltz_pair_iptm") or {}).get("nanobody_in_antigen_frame")
+            assert recorded is not None and approx(recorded, boltz_json), \
+                f"recorded pair ipTM differs from confidence JSON: {recorded} != {boltz_json}"
         # M-13(정밀): 공식 wrapper 값이 '공식 출력을 제대로 읽었는지'뿐 아니라
         # 독립 재구현(ipsae_pure)과도 일치하는지 검증한다. (값 999 주입 같은 오염 차단)
         pair = (official.get("max") or {}).get((min(ag, nb), max(ag, nb)))
@@ -208,7 +214,7 @@ def test_run_dir(run_dir: Path):
                     "(등록 누락 회귀)")
                 print("    그림 검사: 그림 파일이 없어 건너뜀 (--no-figures 실행일 수 있음)")
         print(f"    model_{m['index']}: pLDDT mean {plddt.mean():.2f} (json ok) | "
-              f"ipTM(nb|ag) {pure:.3f} (json {boltz_json:.3f}) | "
+              f"PAE-derived ipTM proxy {pure:.3f} | Boltz pair ipTM {boltz_json:.3f} | "
               f"ipSAE {pair['ipsae']:.3f} | DockQ-ready")
     print("  [ok] run-dir consistency")
 

@@ -1,7 +1,7 @@
 # 시나리오 B: 일반 항체(Fv, VH+VL)–항원 복합체
 # 항원 = hen egg lysozyme (1VFB chain C), VH/VL = anti-lysozyme D1.3 Fv (1VFB chains B/A)
 # 사용:  ./run.sh --yaml examples/scenarios/B_fv/fv.yaml --name scn_B \
-#           --nanobody-chain B --antigen-chain A --antigen-chains A
+#           --nanobody-chain B --antigen-chain A --antigen-chains A --msa-subsample 512
 version: 1
 sequences:
   - protein:

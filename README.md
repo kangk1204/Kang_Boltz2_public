@@ -219,16 +219,19 @@ sequences:
 ```bash
 ./run.sh --yaml examples/scenarios/B_fv/fv.yaml --name scn_B \
   --nanobody-chain B --antigen-chain A --antigen-chains A \
-  --reference examples/scenarios/B_fv/reference_D1.3_lysozyme.cif
+  --reference examples/scenarios/B_fv/reference_D1.3_lysozyme.cif \
+  --msa-subsample 512
 ```
 > `--antigen-chains A`를 빼면 **VL(C)이 항원으로 섞여** VH–VL 계면이 항원 인터페이스에 들어갑니다. 꼭 붙이세요.
 > 참조 구조(`reference_D1.3_lysozyme.cif`)도 **저장소에 동봉**되어 있어 따로 구하지 않아도 됩니다.
+> `--msa-subsample 512`는 16GB GPU용 메모리 절약 설정입니다. MSA에서 모델에 사용하는 행 수를
+> 줄이며, 예측 모델 수(기본 3개)는 유지합니다. 전체 MSA를 사용하는 기본 실행과 결과가 달라질 수 있습니다.
 
 **자동 분석** — binder = VH(B) 기준입니다. VH CDR 3개, VH–항원 인터페이스(ipTM·ipSAE·PAE), 참조가 있으면 DockQ.
 VL(C)은 3D 구조에만 표시(`other`)되고 **VL CDR/파라토프·VH–VL 계면은 지표에 없습니다**(현재 한계).
 
 **결과** — `outputs/scn_B/report/index.html` (나노바디 모드와 동일 구조).
-> 참고: 예제 B(D1.3–lysozyme)는 Boltz 기본 실행에서 항원 인터페이스 ipTM이 낮게(≈0.29) 나왔습니다.
+> 참고: 예제 B(D1.3–lysozyme)는 기존 전체 MSA 기본 실행에서 항원 인터페이스 ipTM이 낮게(≈0.29) 나왔습니다.
 > Fv 자체는 잘 접히지만(VH–VL ipTM≈0.96) 이 인터페이스는 모델이 확신하지 못한 결과입니다(참조가
 > 있어 DockQ로 정량 확인 가능). 안정적으로 잘 맞는 대조 사례는 나노바디 예제 A(1MEL)입니다.
 
@@ -487,7 +490,7 @@ WT/변이 비교에서 정책을 맞추고 결과의 실행 기록을 확인하�
 
 | 증상 | 해결 |
 |---|---|
-| CUDA out of memory | `--parallel-samples 1 --samples 2`. `nvidia-smi`로 다른 GPU 작업 확인 |
+| CUDA out of memory / ran out of memory, skipping batch | `--msa-subsample 512 --parallel-samples 1`. 여전히 부족하면 256으로 낮추고 `nvidia-smi`로 다른 GPU 작업 확인 |
 | 실행 중 `Segmentation fault (core dumped)` | 첫 실행에서 흔한 CUDA/드라이버 일시 크래시. 파이프라인이 부분 산출물을 지우고 **자동 재시도**하며 대개 성공합니다. 반복되면 `--no-kernels`, GPU 드라이버·다른 프로세스 확인, 같은 서버의 다른 env(`BOLTZ_ENV=/path/to/env ./run.sh ...`) 시도 |
 | 커널 관련 오류 | `--no-kernels` 붙이기 (자동 감지도 됩니다) |
 | MSA 서버 시간 초과 | 배치는 자동 재시도. 급하면 `--msa empty` (품질은 낮아짐) |
@@ -498,6 +501,22 @@ WT/변이 비교에서 정책을 맞추고 결과의 실행 기록을 확인하�
 | 배치 일부 실패 (종료 코드≠0) | 정상 동작입니다. `_logs/<job>.log` 확인 후 `--jobs <job>`으로 재실행 |
 | Mol* 자산 SHA-256 불일치 | 다운로드가 손상/변조된 경우입니다. `assets/molstar.js`·`assets/molstar.css`를 지우고 `setup.sh` 재실행 |
 | ligand 포함 입력 | 리간드·핵산 등 비단백질 토큰이 있으면 PAE 기반 지표(ipSAE, 인터페이스)는 자동 생략되고 confidence JSON 값과 DockQ만 표시됩니다 |
+
+GPU OOM이 감지되면 **한 번만** MSA subsampling 512행과 `parallel_samples=1`로 재시도합니다.
+이미 더 작은 MSA 제한을 지정했다면 그 제한을 유지하며, 같은 설정의 OOM을 반복하지 않습니다.
+요청한 모델 수·seed·steps·recycles는 유지합니다. 설정 자동 변경을 막으려면 `--no-oom-retry`를 붙이세요.
+MSA subsampling은 Boltz의 `--subsample_msa --num_subsampled_msa` 옵션을 사용합니다.
+([Boltz 2.2.1 구현](https://github.com/jwohlwend/boltz/blob/v2.2.1/src/boltz/main.py))
+
+실제 설정은 `outputs/<이름>/.run_params.json`과 분석 JSON의 `settings.run_params`에 기록합니다.
+`msa_subsample`은 적용 값(0=전체 MSA), `requested_msa_subsample`은 요청 값,
+`oom_retry_applied`는 OOM 복구 설정 적용 여부입니다. WT와 변이의 MSA subsampling 설정이 다르면
+동일 조건 비교가 아니므로 배치 Δ를 계산하지 않습니다. 같은 값으로 맞추어 다시 예측하세요.
+배치 완료 캐시도 실제 설정을 기준으로 구분하므로, MSA 512 복구 결과를 전체 MSA 결과로 재사용하지 않습니다.
+각 시도의 원본 로그는 실행 폴더의 `prediction_attempt_1.log`, `prediction_attempt_2.log`에 남습니다.
+
+실패 후 `nvidia-smi`의 메모리가 작게 보일 수 있습니다. Boltz 종료 후 메모리가 반환되므로
+그 값은 실패 직전의 최대 사용량이 아닙니다. GPU 연산 사용률(`GPU-Util`)과 메모리 사용량도 별개입니다.
 
 ---
 

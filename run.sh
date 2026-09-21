@@ -25,6 +25,8 @@ GPUS="${GPUS:-}"                           # 배치에서 job 을 나눠 쓸 GPU
 HOTSPOT="${HOTSPOT:-}"                     # 항원 epitope 잔기 (pocket 제약)
 MSA_CACHE_DIR="${MSA_CACHE_DIR:-$ROOT/msa_cache}"  # MSA 캐시 폴더
 MSA_MODE="${MSA_MODE:-server}"
+MSA_SUBSAMPLE="${MSA_SUBSAMPLE:-0}"         # 0=전체 MSA, 양수=모델 내부 MSA 행 수 제한
+OOM_RETRY="${OOM_RETRY:-1}"               # GPU OOM 시 메모리 절약 설정으로 1회 재시도
 PORT="${PORT:-8765}"
 ENV_DIR="${BOLTZ_ENV:-}"
 GPU="${CUDA_VISIBLE_DEVICES:-}"
@@ -142,6 +144,8 @@ Boltz-2 나노바디 예측 파이프라인
   --antigen-chains A,D  항원 체인 집합을 콤마로 명시 (Fv 의 VL 등 다른 사슬을 항원에서 제외)
   --gpu N          사용할 GPU 번호 (CUDA_VISIBLE_DEVICES)
   --parallel-samples N  동시에 접는 샘플 수 (기본 1: VRAM 절약, 샘플이 많으면 2)
+  --msa-subsample N MSA 행을 N개로 subsampling (0=기존 전체 MSA, 기본 0)
+  --no-oom-retry    GPU OOM 시 설정을 변경하지 않고 실패로 종료
   --concurrency N  배치에서 동시에 돌릴 job 수 (기본 1; VRAM 여유가 부족하면 자동으로 낮춤)
   --devices N      한 job 에 쓸 GPU 수 (multi-GPU, 기본 1)
   --gpus 0,1       배치에서 job 을 GPU 별로 나눠 실행 (라운드로빈; 한 job 에는 GPU 1개)
@@ -160,7 +164,7 @@ CDR 변이 라이브러리 옵션 (--make-cdr-library 와 함께)
   --prefix P --outdir DIR --batch-out TSV   기본: FASTA 헤더 / examples/cdr_library
   --exhaustive --allow-cys                  조합 전수 / 시스테인 허용
 
-환경변수: BOLTZ_ENV(conda env 경로), SAMPLES, SEED, STEPS, RECYCLES, WORKERS, MSA_MODE, PORT
+환경변수: BOLTZ_ENV(conda env 경로), SAMPLES, SEED, STEPS, RECYCLES, WORKERS, MSA_MODE, MSA_SUBSAMPLE, OOM_RETRY, PORT
 EOF
 }
 
@@ -207,6 +211,8 @@ while [[ $# -gt 0 ]]; do
     --gpu) GPU="$2"; shift 2;;
     --cache) export BOLTZ_CACHE="$2"; shift 2;;
     --parallel-samples) PARALLEL_SAMPLES="$2"; shift 2;;
+    --msa-subsample) MSA_SUBSAMPLE="$2"; shift 2;;
+    --no-oom-retry) OOM_RETRY=0; shift;;
     --concurrency) CONCURRENCY="$2"; shift 2;;
     --devices) DEVICES="$2"; shift 2;;
     --gpus) GPUS="$2"; shift 2;;
@@ -302,7 +308,7 @@ PYEOF
 
 for pair in "SAMPLES:$SAMPLES" "SEED:$SEED" "STEPS:$STEPS" "RECYCLES:$RECYCLES" \
             "WORKERS:$WORKERS" "PARALLEL_SAMPLES:$PARALLEL_SAMPLES" \
-            "CONCURRENCY:$CONCURRENCY" "DEVICES:$DEVICES"; do
+            "CONCURRENCY:$CONCURRENCY" "DEVICES:$DEVICES" "MSA_SUBSAMPLE:$MSA_SUBSAMPLE"; do
   name="${pair%%:*}"; val="${pair#*:}"
   [[ "$val" =~ ^[0-9]+$ ]] || die "$name 값은 정수여야 합니다 (입력값: '$val')"
 done
@@ -312,6 +318,8 @@ done
 [[ "$RECYCLES" -ge 1 ]] || die "--recycles 는 1 이상이어야 합니다"
 [[ "$PARALLEL_SAMPLES" -ge 1 ]] || die "--parallel-samples 는 1 이상이어야 합니다"
 [[ "$DEVICES" -ge 1 ]] || die "--devices 는 1 이상이어야 합니다"
+[[ "$OOM_RETRY" == "0" || "$OOM_RETRY" == "1" ]] || die "OOM_RETRY 는 0 또는 1이어야 합니다"
+REQUESTED_MSA_SUBSAMPLE="$MSA_SUBSAMPLE"
 case "$MSA_MODE" in
   server|empty|cache) ;;
   *) die "--msa 는 server, empty, cache 중 하나여야 합니다 (입력값: $MSA_MODE)";;
@@ -388,6 +396,7 @@ PYEOF
     printf 'samples=%s\nseed=%s\nsteps=%s\nrecycles=%s\nmsa=%s\nparallel=%s\ndevices=%s\nruntime=%s\n' \
       "$SAMPLES" "$SEED" "$STEPS" "$RECYCLES" "$MSA_MODE" "$PARALLEL_SAMPLES" "$DEVICES" \
       "$RUNTIME_PROVENANCE"
+    printf 'msa_subsample=%s\noom_retry=%s\noom_fallback_msa=512\n' "$MSA_SUBSAMPLE" "$OOM_RETRY"
   } | "$PY" -c "import hashlib,sys; print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest()[:12])"
 }
 
@@ -478,13 +487,17 @@ prepare_boltz_dir() {
   fi
   printf '%s' "$fp" > "$out_dir/.fingerprint.tmp" && mv "$out_dir/.fingerprint.tmp" "$out_dir/.run_fingerprint"
   "$PY" - "$out_dir" "$fp" "$SAMPLES" "$SEED" "$STEPS" "$RECYCLES" "$MSA_MODE" \
-    "$RUNTIME_PROVENANCE" "$PARALLEL_SAMPLES" "$DEVICES" <<'PYEOF'
+    "$RUNTIME_PROVENANCE" "$PARALLEL_SAMPLES" "$DEVICES" "$MSA_SUBSAMPLE" \
+    "$REQUESTED_MSA_SUBSAMPLE" "${OOM_RETRY_APPLIED:-0}" <<'PYEOF'
 import json, sys, datetime
 out, fp, samples, seed, steps, recycles, msa, runtime, parallel, devices = sys.argv[1:11]
+msa_subsample, requested_msa_subsample, oom_retry_applied = sys.argv[11:14]
 json.dump({
     "fingerprint": fp, "samples": int(samples), "seed": int(seed), "steps": int(steps),
     "recycles": int(recycles), "msa": msa, "runtime": json.loads(runtime),
     "parallel_samples": int(parallel), "devices": int(devices),
+    "msa_subsample": int(msa_subsample), "requested_msa_subsample": int(requested_msa_subsample),
+    "oom_retry_applied": oom_retry_applied == "1",
     "written": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
 }, open(f"{out}/.run_params.json", "w"), indent=1)
 PYEOF
@@ -503,13 +516,14 @@ record_active_boltz_dir() {
 }
 
 run_boltz() {
-  local yaml="$1" out_dir="$2"
+  local yaml="$1" out_dir="$2" attempt_log="$3"
   local args=(predict "$yaml" --out_dir "$out_dir" --devices "$DEVICES"
               --diffusion_samples "$SAMPLES" --seed "$SEED" --sampling_steps "$STEPS"
               --recycling_steps "$RECYCLES" --output_format mmcif --write_full_pae
               --num_workers "$WORKERS" --max_parallel_samples "$PARALLEL_SAMPLES")
   [[ "$MSA_MODE" == "server" ]] && args+=(--use_msa_server)
   [[ "$FORCE" == "1" ]] && args+=(--override)
+  [[ "$MSA_SUBSAMPLE" -gt 0 ]] && args+=(--subsample_msa --num_subsampled_msa "$MSA_SUBSAMPLE")
   if command -v nvidia-smi >/dev/null 2>&1; then
     local free_mb dev_idx
     dev_idx="${CUDA_VISIBLE_DEVICES:-}"      # M-09: 배정된 GPU 기준으로 확인 (없으면 첫 GPU)
@@ -521,15 +535,25 @@ run_boltz() {
     fi
     [[ "$free_mb" =~ ^[0-9]+$ ]] || free_mb=0   # H-07: 비수치 출력('No devices' 등) 방어
     if [[ "$free_mb" -lt 9000 ]]; then
-      warn "GPU 여유 메모리가 ${free_mb}MB 입니다 (권장 9GB+). OOM 발생 시 --parallel-samples 1 --samples 2 또는 다른 GPU 작업 종료"
+      warn "GPU 여유 메모리가 ${free_mb}MB 입니다. 긴 입력·다중 체인은 더 필요할 수 있습니다. --msa-subsample 512 --parallel-samples 1 또는 다른 GPU 작업 종료를 검토하세요."
     fi
   fi
   prepare_boltz_dir "$yaml" "$out_dir"
-  log "Boltz-2 예측 시작: $(basename "$yaml") (samples=$SAMPLES seed=$SEED steps=$STEPS)"
+  log "Boltz-2 예측 시작: $(basename "$yaml") (samples=$SAMPLES seed=$SEED steps=$STEPS msa_subsample=$MSA_SUBSAMPLE)"
   # H-04(정밀): 마지막 명령을 record_active_boltz_dir(... || true) 로 두면 Boltz 의
   # 비정상 종료 코드가 삼켜진다. 종료 코드를 보존해 그대로 반환한다.
   local rc=0
-  "$BOLTZ" "${args[@]}" "${KERNEL_ARGS[@]}" || rc=$?
+  local -a command_status=()
+  if "$BOLTZ" "${args[@]}" "${KERNEL_ARGS[@]}" 2>&1 | tee "$attempt_log"; then
+    command_status=("${PIPESTATUS[@]}")
+  else
+    command_status=("${PIPESTATUS[@]}")
+  fi
+  rc="${command_status[0]}"
+  if [[ "$rc" == "0" && "${command_status[1]}" != "0" ]]; then
+    warn "예측 로그 저장 실패: $attempt_log"
+    rc="${command_status[1]}"
+  fi
   record_active_boltz_dir "$out_dir" >/dev/null || true
   return "$rc"
 }
@@ -544,17 +568,23 @@ PYEOF
 }
 
 run_job_prediction() {
-  # 예측 실행 + 산출물 확인, 실패 시 1회 재시도 (MSA 서버 오류/CUDA 일시 크래시 대비)
+  # OOM은 Boltz가 exit 0으로 삼킬 수 있으므로 산출물과 로그를 함께 확인한다.
   local yaml="$1" out="$2" tries=2 i=1
   while [[ "$i" -le "$tries" ]]; do
-    local rc=0
-    if run_boltz "$yaml" "$out"; then
+    local rc=0 oom=0 attempt_log="$out/prediction_attempt_${i}.log"
+    if run_boltz "$yaml" "$out" "$attempt_log"; then
       if validate_active_predictions "$out" "$SAMPLES"; then
         return 0
       fi
-      warn "Boltz 산출물 검증 실패: 요청 샘플 수($SAMPLES), 구조/PAE/pLDDT/신뢰도 파일을 확인합니다"
     else
       rc=$?
+    fi
+    if grep -Eiq 'out of memory|CUBLAS_STATUS_ALLOC_FAILED' "$attempt_log"; then
+      oom=1
+      warn "GPU 메모리 부족(OOM)으로 예측이 실패했습니다. 로그: $attempt_log"
+    elif [[ "$rc" == "0" ]]; then
+      warn "Boltz 산출물 검증 실패: 요청 샘플 수($SAMPLES), 구조/PAE/pLDDT/신뢰도 파일을 확인합니다. 로그: $attempt_log"
+    else
       if [[ "$rc" -ge 128 ]]; then
         # 139=SIGSEGV, 134=SIGABRT 등. 흔히 첫 CUDA 컨텍스트 초기화/드라이버 문제로
         # 한 번 죽었다가 재시도에서 성공한다. 재시도로 대개 해결되지만 반복되면 환경 점검 필요.
@@ -562,6 +592,24 @@ run_job_prediction() {
       fi
     fi
     i=$((i + 1))
+    if [[ "$oom" == "1" ]]; then
+      if [[ "$OOM_RETRY" != "1" || "$i" -gt "$tries" ]]; then
+        warn "OOM 복구 종료. nvidia-smi로 다른 작업을 확인하거나 --msa-subsample 256 --parallel-samples 1로 새 실행을 시도하세요."
+        return 1
+      fi
+      local reduced_msa=512
+      if [[ "$MSA_SUBSAMPLE" -gt 0 && "$MSA_SUBSAMPLE" -lt "$reduced_msa" ]]; then
+        reduced_msa="$MSA_SUBSAMPLE"
+      fi
+      if [[ "$MSA_SUBSAMPLE" == "$reduced_msa" && "$PARALLEL_SAMPLES" == "1" ]]; then
+        warn "이미 MSA subsample=$MSA_SUBSAMPLE, parallel_samples=1입니다. 같은 설정으로 반복하지 않습니다."
+        return 1
+      fi
+      MSA_SUBSAMPLE="$reduced_msa"
+      PARALLEL_SAMPLES=1
+      OOM_RETRY_APPLIED=1
+      warn "메모리 절약 재시도: MSA subsample=$MSA_SUBSAMPLE, parallel_samples=1 (요청 모델 $SAMPLES개 유지). MSA 입력 행 수가 달라지므로 결과가 달라질 수 있으며 실제 설정을 기록합니다."
+    fi
     if [[ "$i" -le "$tries" ]]; then
       warn "부분 산출물을 삭제하고 ${RETRY_SLEEP}초 후 재시도합니다 ($((i - 1))/$((tries - 1)))"
       clear_partial_prediction "$out"
@@ -634,6 +682,8 @@ PYEOF
 }
 
 do_single() {
+  # Bash 동적 스코프: OOM 복구 설정을 이 job 안에서만 변경한다.
+  local MSA_SUBSAMPLE="$MSA_SUBSAMPLE" PARALLEL_SAMPLES="$PARALLEL_SAMPLES" OOM_RETRY_APPLIED=0
   local name="${NAME:-$(date +%Y%m%d_%H%M%S)}"
   if [[ "$NO_EMBED" == "1" ]]; then
     die "--no-embed 는 현재 단일/YAML 리포트에서 지원하지 않습니다 (배치 리포트 재생성만 지원)"
@@ -688,8 +738,11 @@ do_single() {
   base_fp="$(completion_fingerprint "$original_yaml" "$meta" "$REFERENCE")" || die "완료 지문 계산 실패"
   local out_dir="$OUT_ROOT/$name"
   mkdir -p "$out_dir"
+  rm -f "$out_dir/.completed"
   rm -rf "$out_dir/analysis" "$out_dir/report"   # C-03/H-05: 옛 분석·리포트가 새 결과로 오인되지 않도록
   run_job_prediction "$yaml" "$out_dir" || die "Boltz 예측 실패 또는 산출물 불완전 (로그 확인)"
+  # OOM 복구로 바뀐 실제 설정까지 완료 캐시에 반영한다.
+  base_fp="$(completion_fingerprint "$original_yaml" "$meta" "$REFERENCE")" || die "완료 지문 계산 실패"
   run_analysis "$out_dir" "$yaml" "$meta" "$REFERENCE" || die "분석 실패"
   run_report "$out_dir" || die "리포트 생성 실패"
   printf '%s' "$base_fp" > "$out_dir/.completed"
@@ -706,6 +759,7 @@ do_single() {
 }
 
 run_one_job() {
+  local MSA_SUBSAMPLE="$MSA_SUBSAMPLE" PARALLEL_SAMPLES="$PARALLEL_SAMPLES" OOM_RETRY_APPLIED=0
   # $1=jobs_dir $2=jname $3=yaml $4=meta $5=ref  -> $out/.status 에 OK/FAIL 기록
   local jobs_dir="$1" jname="$2" jyaml="$3" jmeta="$4" jref="$5"
   local out="$jobs_dir/$jname" t0
@@ -732,6 +786,8 @@ run_one_job() {
     if ! run_job_prediction "$jyaml" "$out"; then
       echo "RESULT: FAIL_PREDICT"; echo "FAIL_PREDICT" > "$out/.status"; return 1
     fi
+    base_fp="$(completion_fingerprint "$original_yaml" "$jmeta" "$jref")" \
+      || { echo "FAIL_INPUT" > "$out/.status"; return 1; }
     if ! run_analysis "$out" "$jyaml" "$jmeta" "$jref"; then
       echo "RESULT: FAIL_ANALYZE"; echo "FAIL_ANALYZE" > "$out/.status"; return 1
     fi

@@ -303,6 +303,52 @@ class ReportTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("samples", reason)
 
+    def test_delta_requires_matched_msa_subsample(self):
+        common = {"status": "ok", "group": (("A", "ANTIGEN"),),
+                  "run_params": {"samples": 1, "seed": 42, "steps": 200, "recycles": 3,
+                                 "msa": "cache", "msa_subsample": 512, **EXECUTION_CONTEXT},
+                  "analysis_settings": dict(MATCHED_ANALYSIS),
+                  "rank_key": "primary", "primary_scope": "pair",
+                  "primary_source": "boltz_pair", "n_models": 1}
+        ctrl = dict(common, job="WT")
+        mutant = dict(common, job="m1")
+        ok, reason = batch_report.delta_eligibility(mutant, ctrl)
+        self.assertTrue(ok, reason)
+
+        mutant_params = dict(common["run_params"], msa_subsample=0)
+        mutant = dict(common, job="m1", run_params=mutant_params)
+        ok, reason = batch_report.delta_eligibility(mutant, ctrl)
+        self.assertFalse(ok)
+        self.assertIn("msa_subsample", reason)
+
+    def test_delta_treats_missing_msa_subsample_as_zero(self):
+        ctrl_params = {"samples": 1, "seed": 42, "steps": 200, "recycles": 3,
+                       "msa": "cache", **EXECUTION_CONTEXT}
+        mutant_params = dict(ctrl_params, msa_subsample=0)
+        common = {"status": "ok", "group": (("A", "ANTIGEN"),),
+                  "analysis_settings": dict(MATCHED_ANALYSIS),
+                  "rank_key": "primary", "primary_scope": "pair",
+                  "primary_source": "boltz_pair", "n_models": 1}
+        ctrl = dict(common, job="WT", run_params=ctrl_params)
+        mutant = dict(common, job="m1", run_params=mutant_params)
+        ok, reason = batch_report.delta_eligibility(mutant, ctrl)
+        self.assertTrue(ok, reason)
+
+    def test_delta_rejects_invalid_msa_subsample(self):
+        common_params = {"samples": 1, "seed": 42, "steps": 200, "recycles": 3,
+                         "msa": "cache", **EXECUTION_CONTEXT}
+        common = {"status": "ok", "group": (("A", "ANTIGEN"),),
+                  "analysis_settings": dict(MATCHED_ANALYSIS),
+                  "rank_key": "primary", "primary_scope": "pair",
+                  "primary_source": "boltz_pair", "n_models": 1}
+        ctrl = dict(common, job="WT", run_params=dict(common_params, msa_subsample=0))
+        for value in (True, -1, 1.5, "512"):
+            with self.subTest(value=value):
+                mutant = dict(common, job="m1", run_params=dict(common_params, msa_subsample=value))
+                ok, reason = batch_report.delta_eligibility(mutant, ctrl)
+                self.assertFalse(ok)
+                self.assertIn("invalid run param: msa_subsample", reason)
+
     def test_delta_rejects_missing_provenance(self):
         ctrl = {"status": "ok", "group": ("g",), "job": "g_WT", "run_params": {},
                 "rank_key": "primary_interface_scores", "n_models": 1}

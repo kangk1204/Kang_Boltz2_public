@@ -30,11 +30,16 @@ README 3-1의 시나리오 A~F를 **그대로 복사해 실행**할 수 있게 �
 ```bash
 ./run.sh --yaml examples/scenarios/B_fv/fv.yaml --name scn_B \
   --nanobody-chain B --antigen-chain A --antigen-chains A \
-  --reference examples/scenarios/B_fv/reference_D1.3_lysozyme.cif
+  --reference examples/scenarios/B_fv/reference_D1.3_lysozyme.cif \
+  --msa-subsample 512
 ```
 결과: `outputs/scn_B/report/index.html` — VH 기준 분석, VL(C)은 `other`(3D에만 표시), VH–항원 DockQ 계산
 
-> **관찰(정직한 기록)**: 이 D1.3–lysozyme 예제에서 Boltz 기본 실행의 VH–항원 ipTM은 낮게(≈0.29) 나왔고
+`--msa-subsample 512`는 16GB GPU에서 메모리 사용을 줄이도록 모델의 MSA 행 수를 제한합니다.
+기본 모델 3개는 유지하지만 전체 MSA 실행과 수치는 달라질 수 있습니다. 실제 설정은
+`.run_params.json`에 기록됩니다. WT–변이 비교에서는 이 설정도 동일하게 맞추세요.
+
+> **관찰(정직한 기록)**: 이 D1.3–lysozyme 예제에서 기존 전체 MSA 기본 실행의 VH–항원 ipTM은 낮게(≈0.29) 나왔고
 > DockQ도 낮았습니다. 반면 Fv 자체는 잘 접힙니다(VH–VL ipTM≈0.96). 즉 **모델이 이 항체–항원
 > 인터페이스를 확신하지 못한 결과**이며, 파이프라인·참조 구조 문제가 아닙니다(참조가 있어 DockQ로
 > 정량 확인 가능). 나노바디 예제 A(1MEL)가 안정적으로 잘 맞는 대조 사례입니다.

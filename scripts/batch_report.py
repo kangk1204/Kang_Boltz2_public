@@ -758,6 +758,13 @@ def _project_runtime_provenance(value: dict | None) -> tuple[bool, object]:
     return True, {key: value.get(key) for key in required}
 
 
+def _project_msa_subsample(params: dict) -> tuple[bool, object]:
+    value = params.get("msa_subsample", 0)
+    if type(value) is not int or value < 0:
+        return False, "invalid run param: msa_subsample"
+    return True, value
+
+
 def delta_eligibility(row: dict, control: dict) -> tuple[bool, str]:
     """Return whether WT-mutant deltas can be interpreted as a matched comparison."""
     if not control:
@@ -775,6 +782,12 @@ def delta_eligibility(row: dict, control: dict) -> tuple[bool, str]:
     mismatched = [k for k in keys if rp.get(k) != cp.get(k)]
     if mismatched:
         return False, "mismatched run params: " + ", ".join(mismatched)
+    ok_sub_r, sub_r = _project_msa_subsample(rp)
+    ok_sub_c, sub_c = _project_msa_subsample(cp)
+    if not ok_sub_r or not ok_sub_c:
+        return False, str(sub_r if not ok_sub_r else sub_c)
+    if sub_r != sub_c:
+        return False, "mismatched run params: msa_subsample"
     ok_rt_r, rt_r = _project_runtime_provenance(rp.get("runtime"))
     ok_rt_c, rt_c = _project_runtime_provenance(cp.get("runtime"))
     if not ok_rt_r or not ok_rt_c:
