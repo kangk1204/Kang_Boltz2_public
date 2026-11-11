@@ -11,13 +11,14 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_SH = ROOT / "run.sh"
-BOLTZ_PY = Path(os.environ.get("BOLTZ_TEST_PY", "/home/keunsoo/miniforge3/envs/ncf-boltz2/bin/python"))
 try:
     import gemmi  # noqa: F401
 
     HAS_GEMMI = True
 except ImportError:
     HAS_GEMMI = False
+
+BOLTZ_PY = Path(os.environ.get("BOLTZ_TEST_PY") or (sys.executable if HAS_GEMMI else ROOT / ".missing-test-python"))
 
 sys.path.insert(0, str(ROOT / "scripts"))
 import runtime_state  # noqa: E402
@@ -593,7 +594,7 @@ exec "{BOLTZ_PY}" "$@"
             got = subprocess.run(
                 ["bash", str(RUN_SH), "--list"],
                 cwd=ROOT,
-                env={"BOLTZ_ENV": "/home/keunsoo/miniforge3/envs/ncf-boltz2", "PATH": "/usr/bin:/bin", "HOME": str(Path.home())},
+                env={"BOLTZ_ENV": str(out / "no-installed-engine"), "PATH": "/usr/bin:/bin", "HOME": str(Path.home())},
                 text=True,
                 capture_output=True,
                 check=False,

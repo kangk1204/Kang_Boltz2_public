@@ -30,6 +30,17 @@ def file_sha256(path: Path | str) -> str:
     return digest.hexdigest()
 
 
+def batch_input_identity(meta, reference_digest):
+    """Compare a published batch row with the inputs saved alongside its prediction."""
+    contents = {
+        "chains": [(c["id"], c["role"], c["sequence"]) for c in meta["chains"]],
+        "hotspot": meta.get("hotspot") or [],
+        "msa": meta.get("msa"),
+        "reference": reference_digest,
+    }
+    return hashlib.sha256(json.dumps(contents, sort_keys=True).encode()).hexdigest()
+
+
 def analysis_provenance(ipsae_script: Path | str | None = None) -> dict[str, Any]:
     """Identify the actual scoring implementation, not just a mutable version label."""
     scripts = Path(__file__).resolve().parent

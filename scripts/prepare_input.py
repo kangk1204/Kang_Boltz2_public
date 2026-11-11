@@ -24,7 +24,7 @@ TARGET_CHAIN_POOL = ["A", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
 NANOBODY_CHAIN = "B"
 
 
-def read_fasta(path: Path):
+def read_fasta(path: Path, *, allow_chain_separator: bool = False):
     """Return [{"header":..., "sequence":...}, ...] for a (possibly multi-record) FASTA.
 
     H-09: BOM(엑셀/윈도우 저장) 때문에 첫 레코드가 사라지지 않도록 utf-8-sig 로 읽고,
@@ -49,7 +49,7 @@ def read_fasta(path: Path):
     if not records:
         raise ValueError(f"no sequences found in {path}")
     for rec in records:
-        bad = sorted(set(rec["sequence"]) - VALID_AA)
+        bad = sorted(set(rec["sequence"]) - VALID_AA - ({":"} if allow_chain_separator else set()))
         if bad:
             raise ValueError(f"{path}: invalid characters {bad} in '{rec['header']}'")
         if not rec["sequence"]:
@@ -57,7 +57,7 @@ def read_fasta(path: Path):
     return records
 
 
-def parse_hotspot(spec: str, default_chain: str):
+def parse_hotspot(spec: str, default_chain: str, chain_lengths=None):
     """'45,67' 또는 'A:45,A:67' 또는 '45-60' -> [(chain, resnum), ...]"""
     if str(spec or "").strip() in ("", "-"):
         return []   # '-' 는 표에서 '없음'을 뜻하는 관례
@@ -75,6 +75,8 @@ def parse_hotspot(spec: str, default_chain: str):
                 raise ValueError(f"hotspot 범위가 거꾸로입니다: '{chunk}' (시작 <= 끝 이어야 함)")
             if lo < 1:
                 raise ValueError(f"hotspot 잔기 번호는 1 이상이어야 합니다: '{chunk}'")
+            if chain_lengths is not None and hi > chain_lengths.get(chain, 0):
+                raise ValueError(f"hotspot 범위 {chunk}가 항원 체인 길이를 벗어납니다")
             spots += [(chain, n) for n in range(lo, hi + 1)]
         else:
             n = int(res)
@@ -84,6 +86,15 @@ def parse_hotspot(spec: str, default_chain: str):
     if str(spec or "").strip() and not spots:
         raise ValueError(f"hotspot 입력을 해석하지 못했습니다: '{spec}'")
     return spots
+
+
+def target_sites(spec, lengths):
+    """Validated, unique (chain, one-based FASTA position) for contact reporting."""
+    positions = parse_hotspot(spec, "A", lengths)
+    for chain, pos in positions:
+        if chain not in lengths or pos > lengths[chain]:
+            raise ValueError(f"관심 잔기 {chain}:{pos}가 표적 서열 범위를 벗어납니다")
+    return list(dict.fromkeys(positions))
 
 
 def build_yaml(chains, msa: str, hotspot=None, binder: str = NANOBODY_CHAIN):
@@ -142,7 +153,7 @@ def build_job(target_records, nanobody_records, name, msa, target_file=None, nan
                          "(use batch mode for multiple nanobodies)")
     hotspot = None
     if hotspot_spec:
-        hotspot = parse_hotspot(hotspot_spec, chains[0]["id"]) if chains else []
+        hotspot = parse_hotspot(hotspot_spec, chains[0]["id"], {ch["id"]: len(ch["sequence"]) for ch in chains if ch["role"] == "antigen"}) if chains else []
         roles = {x["id"]: x.get("role") for x in chains}
         for c, n in hotspot:
             if c not in roles:

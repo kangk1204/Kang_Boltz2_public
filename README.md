@@ -3,6 +3,11 @@
 나노바디와 항원 서열을 넣으면 복합체 구조를 예측하고, 결과를 HTML 리포트로 만들어 줍니다.
 Ubuntu + NVIDIA GPU에서 돌립니다.
 
+**후보 서열이 이미 있다면** [여러 FASTA 후보 한 번에 평가하기](#여러-fasta-후보-한-번에-평가하기)로 이동하세요.
+Git으로 설치한 기존 사용자는 실행 중인 작업이 끝난 뒤 처음 설치한 폴더에서
+`git pull --ff-only`와 `./run.sh --doctor`를 차례로 실행하세요.
+새로 설치한다면 아래 1장부터 시작하세요.
+
 **처음이면 이 순서대로**: 1장 설치(`bash setup.sh --verify`) → `./run.sh --doctor` →
 3-1장에서 하려는 일에 맞는 시나리오(A~F) **하나만** 따라하기.
 막히면 7장(문제가 생기면)을 보고, 그래도 안 되면 서열·명령·오류 메시지 전문과 함께 전달하세요.
@@ -78,6 +83,53 @@ KVFGRCELAAAMKRHGLDNYRGYSLGNWVCAAKFESNFNTQATNRNTDGSTDYGILQINSRW...
 - 항원의 epitope을 알고 있으면 `--hotspot 45,67,101`처럼 **입력 FASTA의 1-based 위치**를 줄 수 있습니다. PDB/auth/UniProt 번호와 다를 수 있으므로 construct의 태그·절단·결측을 먼저 대조하세요.
 
 ---
+
+## 여러 FASTA 후보 한 번에 평가하기
+
+표적에 대해 이미 만든 나노바디를 Boltz-2로 평가하는 방법입니다. FASTA와 `run.sh`만 있으면 됩니다.
+
+**1. 입력 형식을 선택하세요.** 표적이 공통이면 항원은 한 파일에, 후보들은 다른 파일에 넣습니다.
+각 후보의 제목은 `>WT`, `>variant_01`처럼 서로 다르게 적고 다음 줄에 전체 VHH 서열을 넣습니다.
+아래 예시는 저장소에 들어 있는 라이소자임과 나노바디 예제를 사용합니다.
+
+```bash
+./run.sh --target examples/demo_target_lysozyme.fasta --binders examples/demo_nanobody_cAbLys3.fasta --name first_library --samples 1 --msa empty --plan
+```
+
+이미 한 파일에 각 후보가 **VHH:항원** 순서로 들어 있다면 다음 명령으로 확인하세요.
+`pairs.fasta`는 가지고 계신 파일명으로 바꿉니다. 모든 레코드가 항원:VHH 순서면
+`--binder-chain last`를 추가합니다. 순서가 섞였으면 해당 제목에 `binder=0`(첫 체인),
+`binder=1`(두 번째 체인)처럼 적을 수 있습니다. 결과에서는 첫 항원이 A, VHH가 B입니다.
+
+```bash
+./run.sh --complex-fasta pairs.fasta --name library1 --samples 1 --msa empty --plan
+```
+
+**2. 후보 수를 확인하고 실행하세요.** 화면의 **후보 수 × 후보당 모델 수**를 확인한 뒤 같은 명령에서
+`--plan`만 빼면 계산이 시작됩니다. 후보 100개에 `--samples 3`이면 요청 모델은 300개입니다.
+예시의 `--msa empty`는 외부 전송 없이 단일 서열로 예측합니다. `--msa server`를 선택하면
+MSA를 만들기 위해 서열을 외부 서버에 전송합니다.
+
+**3. GPU와 진행 상황을 확인하세요.** 터미널에 현재 후보 이름, 전체 후보 수, 해당 로그 경로가 표시됩니다.
+별도 터미널에서 `nvidia-smi -l 2`로 예측 프로세스와 GPU 사용률을 확인할 수 있습니다.
+기본 설정은 후보 한 개씩, 확산 샘플도 한 개씩 계산하므로 전체 후보 수만큼 GPU 메모리가 늘지는 않습니다.
+완료 후에는 터미널의 **완료 / 건너뜀 / 실패** 수를 확인하세요.
+
+**4. 결과를 여세요.** 위 두 번째 예의 배치 보고서는 `outputs/batch_library1/report/index.html`,
+후보가 많으면 실행 명령에 `--no-embed`를 추가해 배치 보고서 크기를 줄일 수 있습니다. 이때 3D 구조는 후보의 개별 보고서에서 여세요.
+스프레드시트용 표는 같은 폴더의 `summary.tsv`입니다. 보고서에서 후보 이름을 누르면 구조와 점수를 볼 수 있습니다.
+
+**관심 잔기만 확인하려면** 실행 명령에 `--check-sites A:45,67`을 추가하세요.
+표적 FASTA의 첫 잔기를 1로 셉니다. 보고서에는 각 후보의 대표 모델에서 VHH와 8 Å 이내에 있는
+관심 잔기 수와 위치가 표시됩니다(Cβ 기준, 없으면 Cα). 지정한 위치에 접촉이 없으면 0,
+평가할 수 없으면 **평가 불가**로 표시합니다. 계산을 마친 배치에도 다음과 같이 적용할 수 있습니다.
+
+```bash
+./run.sh --batch-report outputs/batch_library1 --check-sites A:45,67
+```
+
+예측 단계에서 원하는 결합 위치를 지정하려면 FASTA 배치 명령에 `--hotspot A:45,67`을 사용하세요.
+이 옵션은 Boltz-2의 pocket 제약에 들어갑니다. TSV 배치에서는 후보별 `hotspot` 열에 지정합니다.
 
 ## 2-1. 참조 구조(reference)란? — 처음이면 꼭 읽기
 

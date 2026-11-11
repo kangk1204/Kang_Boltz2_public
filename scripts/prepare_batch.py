@@ -21,25 +21,28 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime as _dt
+import errno
 import io
 import json
 import re
 from pathlib import Path
 
 import prepare_input as P
-from runtime_state import ensure_path_within, file_sha256, validate_run_name
+from library_input import library_rows
+from runtime_state import batch_input_identity, ensure_path_within, file_sha256, validate_run_name
 
 
-def manifest_reusable(manifest_path: Path, batch_path: Path, msa: str) -> bool:
+def manifest_reusable(manifest_path: Path, batch_path: Path, msa: str, source_options=None) -> bool:
     """Fail closed for legacy, missing, altered inputs or stale generated jobs."""
     try:
         m = json.loads(manifest_path.read_text(encoding="utf-8"))
         if (m.get("schema_version") != 2 or m.get("errors") or not m.get("jobs")
+                or m.get("source_options", {}) != (source_options or {})
                 or m.get("batch_file") != str(batch_path.resolve()) or m.get("msa") != msa
                 or m.get("batch_sha") != file_sha256(batch_path)):
             return False
         builder = {name: file_sha256(Path(__file__).parent / name)
-                   for name in ("prepare_batch.py", "prepare_input.py", "runtime_state.py")}
+                   for name in ("prepare_batch.py", "prepare_input.py", "library_input.py", "runtime_state.py")}
         if m.get("builder_sources") != builder:
             return False
         for job in m["jobs"]:
@@ -76,11 +79,12 @@ def resolve_entry(value: str, base_dirs):
         # 공백이 있어도 실제 파일이면 경로로 인정한다 (R13)
         for base in base_dirs:
             p = (base / candidate).expanduser()
-            if p.exists():
-                return ("file", p)
-        p = Path(candidate).expanduser()
-        if p.exists():
-            return ("file", p)
+            try:
+                if p.is_file():
+                    return ("file", p)
+            except OSError as exc:
+                if exc.errno != errno.ENAMETOOLONG:
+                    raise
     seq = re.sub(r"\s+", "", value).upper()
     bad = sorted(set(seq) - P.VALID_AA)
     if bad:
@@ -104,12 +108,46 @@ def records_from(entry, base_dirs, label):
     return [{"header": f"inline {label}", "sequence": val}], None
 
 
+def table_rows(batch_path):
+    text = batch_path.read_text(encoding="utf-8-sig")   # M-19: BOM 허용
+    if not text.strip():
+        raise SystemExit(f"batch 파일이 비어 있습니다: {batch_path}")
+    try:
+        delimiter = csv.Sniffer().sniff(text[:2000], delimiters="\t,;").delimiter
+    except csv.Error:
+        delimiter = next((c for c in ("\t", ",", ";") if c in text.splitlines()[0]), None)
+        if delimiter is None:
+            raise SystemExit("batch 파일의 구분자(탭/쉼표)를 판별하지 못했습니다") from None
+    reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
+    field_map = {(f or "").strip().lower(): f for f in (reader.fieldnames or [])}
+    if len(field_map) != len(reader.fieldnames or []):
+        raise ValueError("duplicate batch column name")
+    for required in ("name", "antigen", "nanobody"):
+        if required not in field_map:
+            raise SystemExit(f"batch file needs a '{required}' column; found {list(field_map)}")
+
+    for row in reader:
+        if None in row:
+            raise ValueError(f"row {reader.line_num}: extra columns; quote fields containing delimiters")
+        yield {key: row[original] for key, original in field_map.items()}
+
+
 def main():
     ap = argparse.ArgumentParser(description="batch TSV -> Boltz-2 jobs")
     ap.add_argument("--batch", required=True, type=Path)
     ap.add_argument("--name", default=None, help="batch name (default: batch file stem)")
     ap.add_argument("--outdir", type=Path, default=Path("inputs/generated"))
     ap.add_argument("--msa", default="server", choices=["server", "empty", "cache"])
+    ap.add_argument("--layout", choices=("table", "binders", "complex"), default="table")
+    ap.add_argument("--target", type=Path)
+    ap.add_argument("--binder-chain", choices=("first", "last"), default="first")
+    ap.add_argument("--reference", default="")
+    ap.add_argument("--hotspot", default="")
+    ap.add_argument("--reuse", action="store_true")
+    ap.add_argument("--jobs", default="")
+    ap.add_argument("--samples", type=int, default=1)
+    ap.add_argument("--check-sites", default="")
+    ap.add_argument("--plan", action="store_true")
     args = ap.parse_args()
 
     batch_path = args.batch.expanduser()
@@ -121,45 +159,42 @@ def main():
         raise SystemExit(f"batch name 오류: {exc}") from None
     base_dirs = [batch_path.parent.resolve(), Path.cwd().resolve()]
 
-    text = batch_path.read_text(encoding="utf-8-sig")   # M-19: BOM 허용
-    if not text.strip():
-        raise SystemExit(f"batch 파일이 비어 있습니다: {batch_path}")
-    try:
-        dialect = csv.Sniffer().sniff(text[:2000], delimiters="\t,;")
-    except csv.Error:
-        # 뒤쪽 선택 컬럼을 생략한 행이 섞이면 Sniffer 가 실패한다 -> 탭/쉼표 순으로 재시도
-        dialect = None
-        for cand in ("\t", ",", ";"):
-            if cand in text.splitlines()[0]:
-                dialect = csv.excel_tab if cand == "\t" else csv.excel
-                if cand == ";":
-                    dialect = csv.excel
-                    dialect.delimiter = cand
-                break
-        if dialect is None:
-            raise SystemExit("batch 파일의 구분자(탭/쉼표)를 판별하지 못했습니다") from None
-    reader = csv.DictReader(io.StringIO(text), dialect=dialect)
-    field_map = {(f or "").strip().lower(): f for f in (reader.fieldnames or [])}
-    for required in ("name", "antigen", "nanobody"):
-        if required not in field_map:
-            raise SystemExit(f"batch file needs a '{required}' column; found {list(field_map)}")
-
+    source_options = {"layout": args.layout, "binder_chain": args.binder_chain,
+                      "target": str(args.target.resolve()) if args.target else None,
+                      "reference": args.reference, "hotspot": args.hotspot}
+    rows = (table_rows(batch_path) if args.layout == "table" else
+            library_rows(batch_path, args.layout, args.target, args.binder_chain, args.reference, args.hotspot))
     root_outdir = args.outdir.expanduser()
     outdir = root_outdir / f"batch_{batch_name}"
     try:
         outdir = ensure_path_within(outdir, root_outdir, label="batch output path")
     except ValueError as exc:
         raise SystemExit(str(exc)) from None
-    outdir.mkdir(parents=True, exist_ok=True)
+    if args.layout == "table":
+        source_options = {}
+    if args.reuse and manifest_reusable(outdir / "manifest.json", batch_path, args.msa, source_options):
+        if args.check_sites:
+            for job in json.loads((outdir / "manifest.json").read_text())["jobs"]:
+                P.target_sites(args.check_sites, dict(zip(P.TARGET_CHAIN_POOL, job["target_lens"], strict=False)))
+        print(f"[batch] 기존 manifest 재사용: {outdir / 'manifest.json'}")
+        return 0
+    if not args.plan:
+        outdir.mkdir(parents=True, exist_ok=True)
+    pending = {}
+    try:
+        rows = list(rows)
+    except (OSError, ValueError) as exc:
+        raise SystemExit(f"batch input: {exc}") from None
     jobs, seen, errors = [], set(), []
-    for i, row in enumerate(reader, start=1):
+    for i, row in enumerate(rows, start=1):
         def cell(col, row=row):
-            key = field_map.get(col)
-            return (row.get(key) or "").strip() if key else ""
+            return (row.get(col) or "").strip()
 
         name = cell("name") or f"job{i:02d}"
         try:
             name = validate_run_name(name)
+            if name in {"report", "_logs"} or "," in name:
+                raise ValueError("reserved batch name or comma in candidate ID")
         except ValueError as exc:
             errors.append(f"row {i}: invalid job name '{name}' ({exc})")
             continue
@@ -168,17 +203,22 @@ def main():
             continue
         seen.add(name)
         try:
-            antigen_entries = [resolve_entry(v, base_dirs) for v in cell("antigen").split(";")]
-            antigen_entries = [e for e in antigen_entries if e]
-            if not antigen_entries:
-                raise ValueError("antigen: empty")
-            antigen_records, antigen_src = [], []
-            for e in antigen_entries:
-                recs, src = records_from(e, base_dirs, "antigen")
-                antigen_records += recs
-                antigen_src.append(src)
-            nb_entry = resolve_entry(cell("nanobody"), base_dirs)
-            nb_records, nb_src = records_from(nb_entry, base_dirs, "nanobody")
+            if args.layout == "table":
+                antigen_entries = [resolve_entry(v, base_dirs) for v in cell("antigen").split(";")]
+                antigen_entries = [e for e in antigen_entries if e]
+                if not antigen_entries:
+                    raise ValueError("antigen: empty")
+                antigen_records, antigen_src = [], []
+                for e in antigen_entries:
+                    recs, src = records_from(e, base_dirs, "antigen")
+                    antigen_records += recs
+                    antigen_src.append(src)
+                nb_entry = resolve_entry(cell("nanobody"), base_dirs)
+                nb_records, nb_src = records_from(nb_entry, base_dirs, "nanobody")
+            else:
+                antigen_records = row["target_records"]
+                antigen_src = [args.target.resolve()] if args.target else []
+                nb_records, nb_src = [{"header": name, "sequence": row["nanobody"]}], None
             if len(nb_records) > 1:
                 raise ValueError("nanobody must be a single sequence")
             reference = resolve_reference(cell("reference"), base_dirs)
@@ -189,20 +229,25 @@ def main():
             yaml_text, meta = P.build_job(antigen_records, nb_records, name, args.msa,
                                           antigen_src[0] if antigen_src else None, nb_src,
                                           hotspot_spec=hotspot)
+            if any(chr(n) in (reference or "") for n in (9, 10, 13)):
+                raise ValueError("reference path contains a tab or newline")
+            if args.check_sites:
+                P.target_sites(args.check_sites, {c["id"]: len(c["sequence"]) for c in meta["chains"] if c["role"] == "antigen"})
             meta["batch"] = batch_name
             meta["reference"] = reference
             meta["notes"] = cell("notes")
             yaml_path = ensure_path_within(outdir / f"{name}.yaml", outdir, label="job YAML path")
             meta_path = ensure_path_within(outdir / f"{name}.meta.json", outdir, label="job meta path")
-            yaml_path.write_text(yaml_text, encoding="utf-8")
-            meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+            pending[yaml_path] = yaml_text
+            pending[meta_path] = json.dumps(meta, indent=2)
             jobs.append({"name": name, "yaml": str(yaml_path), "meta": str(meta_path),
+                         "input_identity": batch_input_identity(meta, file_sha256(reference) if reference else None),
                          "reference": reference, "notes": meta["notes"],
                          "hotspot": meta.get("hotspot"),
                          "antigen_files": [str(s) for s in antigen_src if s],
                          "nanobody_file": str(nb_src) if nb_src else None,
                          "file_hashes": {str(Path(p).resolve()): file_sha256(p) for p in
-                                         [yaml_path, meta_path, *antigen_src, nb_src, reference] if p},
+                                         [*antigen_src, nb_src, reference] if p},
                          "n_target_chains": len(antigen_records),
                          "nanobody_len": len(nb_records[0]["sequence"]),
                          "target_lens": [len(r["sequence"]) for r in antigen_records]})
@@ -212,14 +257,28 @@ def main():
         except Exception as exc:  # noqa: BLE001
             errors.append(f"row {i} ({name}): {exc}")
 
+    if not rows:
+        errors.append("No candidates: add at least one row after the header")
+    if args.plan:
+        if args.jobs:
+            selected = {n.strip() for n in args.jobs.split(",") if n.strip()}
+            if not selected or selected - seen:
+                errors.append(f"unknown or empty --jobs: {args.jobs}")
+            jobs = [job for job in jobs if job["name"] in selected]
+        if errors:
+            raise SystemExit("\n".join(errors))
+        print(f"[plan] 후보 {len(jobs)}개 × 후보당 {args.samples}개 = 요청 모델 {len(jobs)*args.samples}개 · GPU 계산 전")
+        return 0
+
     manifest = {
         "schema_version": 2,
+        "source_options": source_options,
         "batch": batch_name,
         "created": _dt.datetime.now().astimezone().isoformat(timespec="seconds"),
         "batch_file": str(batch_path.resolve()),          # H-06: 절대 경로로 비교
         "batch_sha": file_sha256(batch_path),
         "builder_sources": {name: file_sha256(Path(__file__).parent / name)
-                            for name in ("prepare_batch.py", "prepare_input.py", "runtime_state.py")},
+                            for name in ("prepare_batch.py", "prepare_input.py", "library_input.py", "runtime_state.py")},
         "outdir": str(outdir),
         "msa": args.msa,
         "jobs": jobs,
@@ -235,6 +294,11 @@ def main():
         for e in errors:
             print("  -", e)
         return 1
+    for path, content in pending.items():
+        path.write_text(content, encoding="utf-8")
+    for job in jobs:
+        for key in ("yaml", "meta"):
+            job["file_hashes"][job[key]] = file_sha256(job[key])
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"\n[batch] {len(jobs)} job(s) prepared -> {manifest_path}")
     return 0

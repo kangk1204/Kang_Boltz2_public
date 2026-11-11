@@ -44,26 +44,27 @@ def cache_path(cache_dir: Path, sequence: str, url: str = "", pairing: str = "")
 
 
 def read_msa_summary(path: Path, query: str | None = None):
-    """CSV 에서 (전체 행 수, 유효 여부) 반환.
-
-    스키마(key,sequence)와 비어있지 않은 행을 확인하고, query 를 주면
-    gap 을 제거한 서열이 MSA 안에 실제로 있는지까지 확인한다(R06).
-    """
+    """Validate the first (query) row and the aligned width consumed by Boltz."""
     try:
-        with path.open() as fh:
-            rows = list(csv.reader(fh))
-    except Exception:  # noqa: BLE001 - 손상된 캐시 파일은 '유효하지 않음'으로 처리
+        with path.open(encoding="utf-8-sig", newline="") as fh:
+            reader = csv.DictReader(fh)
+            if sorted(reader.fieldnames or []) != ["key", "sequence"]:
+                return 0, False
+            count = 0
+            for row in reader:
+                seq = (row.get("sequence") or "").strip()
+                if None in row or row.get("key") is None or not seq:
+                    return count, False
+                if query:
+                    q = query.strip().upper()
+                    if count == 0 and seq != q:
+                        return 0, False
+                    if sum(not letter.islower() for letter in seq) != len(q):
+                        return count, False
+                count += 1
+    except (OSError, UnicodeError, csv.Error):
         return 0, False
-    if not rows or [c.strip().lower() for c in rows[0][:2]] != ["key", "sequence"]:
-        return 0, False
-    body = [r for r in rows[1:] if len(r) >= 2 and r[1].strip()]
-    if not body:
-        return 0, False
-    if query:
-        q = query.strip().upper()
-        if not any(r[1].replace("-", "").strip().upper() == q for r in body):
-            return len(body), False
-    return len(body), True
+    return count, count > 0
 
 
 def fetch_msa(sequence: str, dest: Path, url: str = DEFAULT_URL, pairing: str = "greedy",
@@ -78,7 +79,6 @@ def fetch_msa(sequence: str, dest: Path, url: str = DEFAULT_URL, pairing: str = 
         if valid:
             return dest
         log(f"  [경고] 캐시가 손상되었거나 서열과 불일치 -> 다시 받습니다: {dest.name}")
-        dest.unlink()
 
     lock = dest.with_suffix(".lock")
     token = f"{os.getpid()}:{uuid.uuid4().hex[:8]}"   # RR11: 소유자 토큰
@@ -157,11 +157,14 @@ def _fetch_msa_locked(sequence: str, dest: Path, url: str, pairing: str, log) ->
         if not cands:
             raise RuntimeError("MSA 서버 응답에서 CSV 를 찾지 못했습니다")
         tmp_dest = dest.with_suffix(f".{uuid.uuid4().hex[:8]}.tmp")  # RR11: writer 별 고유 임시 파일
-        shutil.copy2(cands[0], tmp_dest)
-        os.replace(tmp_dest, dest)  # 동시 실행 시에도 부분 파일이 읽히지 않도록
-    n, valid = read_msa_summary(dest, query=sequence)
-    if not valid:
-        raise RuntimeError(f"받은 MSA 가 유효하지 않습니다 (query 미포함): {dest}")
+        n, valid = read_msa_summary(cands[0], query=sequence)
+        if not valid:
+            raise RuntimeError("받은 MSA의 첫 행 또는 정렬 길이가 입력 서열과 다릅니다")
+        try:
+            shutil.copy2(cands[0], tmp_dest)
+            os.replace(tmp_dest, dest)
+        finally:
+            tmp_dest.unlink(missing_ok=True)  # 동시 실행 시에도 부분 파일이 읽히지 않도록
     log(f"  -> 캐시 저장: {dest.name} ({n} 서열)")
     return dest
 

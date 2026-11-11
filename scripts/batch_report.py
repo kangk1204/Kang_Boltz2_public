@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import hashlib
 import html
 import json
 import math
@@ -11,6 +13,7 @@ import re
 import shutil
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from make_report import (
@@ -98,7 +101,7 @@ tr.row.sel{background:#e3f0ff}
 """
 
 JS = r"""
-const JOBS = __JOBS__;          // job name -> {cif, figs, report, m, ...}
+const JOBS = Object.fromEntries(__JOBS__);          // job name -> {cif, figs, report, m, ...}
 const ROWS = __ROWS__;          // array of row dicts (sortable columns)
 const COLS = __COLS__;          // [{key,label,type,fmt,higherBetter}]
 let sortKey = __SORTKEY__, sortDir = -1, filter = '';
@@ -432,8 +435,40 @@ def _metric_stats_kpis(stats: dict[str, dict], metric_labels: dict[str, str]) ->
     return "".join(cards)
 
 
+def checked_contacts(results, model, spec):
+    from metrics import read_structure_tokens
+    from prepare_input import target_sites
+
+    sequences = {c["id"]: c["sequence"] for c in results["chains"] if c["id"] in results["antigen_chains"]}
+    wanted = target_sites(spec, {c: len(seq) for c, seq in sequences.items()})
+    labels = ", ".join(f"{c}:{n}" for c, n in wanted)
+    row = {"requested_sites": labels, "site_hits": None, "contacted_sites": "평가 불가"}
+    if model.get("pae_metrics_applicable") is not True or not results.get("nanobody_chain"):
+        return row
+    # Use the input sequence index, including when CIF author numbering differs.
+    tokens = read_structure_tokens(model["cif"])
+    source = results.get("settings", {}).get("effective_msa_policy", {}).get("chains", [])
+    hashes = {c: item["sequence_hash"] for item in source for c in item["ids"]}
+    ordinal = {}
+    for chain in {c for c, _ in wanted}:
+        indices = [i for i, token in enumerate(tokens) if token["chain"] == chain]
+        sequence = "".join(tokens[i]["aa"] for i in indices)
+        if sequence != sequences[chain] or hashlib.sha256(sequence.encode()).hexdigest()[:16] != hashes.get(chain):
+            return row
+        for pos, i in enumerate(indices, 1):
+            ordinal[chain, pos] = i
+    binder = [t for t in tokens if t["chain"] == results["nanobody_chain"]]
+    if not binder or any(t["cb"] is None for t in binder):
+        return row
+    if any(tokens[ordinal[site]]["cb"] is None for site in wanted):
+        return row
+    contacts = {r["token"] for r in model["interface_8A"]["residues_a"]}
+    hits = [f"{c}:{n}" for c, n in wanted if ordinal[c, n] in contacts]
+    return {**row, "site_hits": len(hits), "contacted_sites": ", ".join(hits) or "없음"}
+
+
 def collect(results_path: Path, job: dict, report_rel: str, fig_rel_dir: str, outdir: Path,
-            embed: bool = True):
+            embed: bool = True, check_sites: str = ""):
     """Build the JS payload for one job."""
     if not results_path.exists():
         return {
@@ -446,6 +481,15 @@ def collect(results_path: Path, job: dict, report_rel: str, fig_rel_dir: str, ou
         }
     results = json.loads(results_path.read_text(encoding="utf-8"))
     local_run_dir = rebase_result_paths(results, results_path)
+    if job.get("input_identity"):
+        from runtime_state import batch_input_identity, file_sha256
+
+        snapshots = results_path.parent / "inputs"
+        saved_meta = json.loads((snapshots / "metadata.json").read_text())
+        reference = (results.get("settings") or {}).get("reference_snapshot")
+        digest = file_sha256(snapshots / Path(reference).name) if reference else None
+        if batch_input_identity(saved_meta, digest) != job["input_identity"]:
+            raise ValueError("입력 표와 저장된 결과의 서열·제약·참조가 다릅니다. 이 후보를 다시 실행하세요.")
     validate_results(results, local_run_dir)
     best = results["models"][0]
     mx = best["ipsae"].get("max") or {}
@@ -491,6 +535,9 @@ def collect(results_path: Path, job: dict, report_rel: str, fig_rel_dir: str, ou
         "best_model_index": results.get("best_model_index"),
     }
 
+    if check_sites:
+        row.update(checked_contacts(results, best, check_sites))
+
     # figures copied into the batch report folder
     figs_html = []
     fig_src = best.get("figures") or {}
@@ -502,7 +549,7 @@ def collect(results_path: Path, job: dict, report_rel: str, fig_rel_dir: str, ou
         dest = outdir / "figures" / job["name"] / f"{key}.png"
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(p, dest)
-        rel = f"figures/{job['name']}/{key}.png"
+        rel = f"figures/{quote(job['name'], safe='')}/{key}.png"
         figs_html.append(f"<figure style='margin:0'><img class='fig' src='{html.escape(rel, quote=True)}' "
                          f"alt='{html.escape(str(cap), quote=True)}'>"
                          f"<figcaption class='note'>{html.escape(str(cap))}</figcaption></figure>")
@@ -982,7 +1029,7 @@ def assign_control_deltas(rows: list[dict]) -> dict:
     return controls
 
 
-def select_active_columns(rows: list[dict]) -> list[tuple]:
+def select_active_columns(rows: list[dict], check_sites: str = "") -> list[tuple]:
     active_cols = list(COLUMNS)
     target_only_batch = is_target_only_batch(rows)
     if target_only_batch:
@@ -994,6 +1041,10 @@ def select_active_columns(rows: list[dict]) -> list[tuple]:
             "nb_plddt", "d_plddt", "cdr3_plddt", "d_cdr3", "iface_pae", "n_contacts",
         }
         active_cols = [c for c in COLUMNS if c[0] not in drop]
+    if check_sites:
+        active_cols.extend([("requested_sites", "관심 잔기", "str", None, True),
+                            ("site_hits", "접촉 잔기 수 (8 Å)", "num", 0, True),
+                            ("contacted_sites", "접촉 위치", "str", None, True)])
     return active_cols
 
 
@@ -1007,10 +1058,10 @@ def write_summary_tsv(path: Path, rows: list[dict], active_cols: list[tuple]) ->
     )
     stat_fields = ("n", "mean", "std", "min", "max")
     stat_keys = [f"{metric}_{field}" for metric in stat_metrics for field in stat_fields]
-    summary_keys = [*keys, *stat_keys, "delta_reason"]
+    summary_keys = [*keys, *stat_keys, "status", "delta_reason"]
     num_like = {key for key, _label, kind, _digits, _default in active_cols if kind == "num"}
     num_like.update(stat_keys)
-    lines = ["\t".join(summary_keys)]
+    lines = [summary_keys]
     for row in rows:
         cells = []
         for key in summary_keys:
@@ -1031,13 +1082,18 @@ def write_summary_tsv(path: Path, rows: list[dict], active_cols: list[tuple]) ->
                 else:
                     cells.append(f"{number:g}" if math.isfinite(number) else "")
             else:
-                cells.append(str(value))
-        lines.append("\t".join(cells))
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+                value = str(value)
+                # Keep spreadsheet programs from executing an imported candidate ID.
+                cells.append("'" + value if value.lstrip().startswith(("=", "+", "-", "@")) else value)
+        lines.append(cells)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        csv.writer(handle, delimiter="\t", lineterminator="\n").writerows(lines)
 
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--selected-jobs", help=argparse.SUPPRESS)
+    ap.add_argument("--check-sites", default="")
     ap.add_argument("--manifest", required=True, type=Path)
     ap.add_argument("--jobs-dir", required=True, type=Path, help="e.g. outputs/batch_myscreen")
     ap.add_argument("--outdir", type=Path, default=None)
@@ -1066,9 +1122,9 @@ def main():
                          "group": tuple(job.get("target_lens") or [])})
             jobs_js[name] = failed_detail_payload(name, "이름 오류", "unsafe job name")
             continue
-        rep = f"../{name}/report/index.html"
+        rep = f"../{quote(name, safe='')}/report/index.html"
         try:
-            payload = collect(res, job, rep, "figures", outdir, embed=not args.no_embed)
+            payload = collect(res, job, rep, "figures", outdir, embed=not args.no_embed, check_sites=args.check_sites)
         except Exception as exc:  # noqa: BLE001 - 한 job 이 깨져도 나머지 표를 살린다
             broken.append(job["name"])
             print(f"[batch-report] 경고: {job['name']} 결과를 읽지 못했습니다 ({exc})")
@@ -1129,7 +1185,7 @@ def main():
     else:
         best = None
 
-    active_cols = select_active_columns(rows)
+    active_cols = select_active_columns(rows, args.check_sites)
     target_only_batch = is_target_only_batch(rows)
     cols_js = [{"key": k, "label": lbl, "type": t, "nd": nd, "higherBetter": hb}
                for k, lbl, t, nd, hb in active_cols]
@@ -1143,7 +1199,7 @@ def main():
             .replace("__ROWS__", "\x00ROWS\x00")
             .replace("__COLS__", "\x00COLS\x00")
             .replace("__SORTKEY__", "\x00SORTKEY\x00"))
-    js = (js.replace("\x00JOBS\x00", _js_json(jobs_js))
+    js = (js.replace("\x00JOBS\x00", _js_json(list(jobs_js.items())))
             .replace("\x00ROWS\x00", _js_json(rows))
             .replace("\x00COLS\x00", _js_json(cols_js))
             .replace("\x00SORTKEY\x00", json.dumps(sort_key_js)))
@@ -1244,7 +1300,8 @@ def main():
     write_summary_tsv(outdir / "summary.tsv", rows, active_cols)
     print(f"[batch-report] wrote {outdir / 'index.html'} ({len(rows)} jobs)")
     print(f"[batch-report] table: {outdir / 'summary.tsv'}")
-    if broken:
+    required = set(args.selected_jobs.split(",")) if args.selected_jobs else {r["job"] for r in rows}
+    if not rows or broken or any(r["status"] != "ok" and r["job"] in required for r in rows):
         print("[batch-report] incomplete batch report inputs; fix/re-run failed jobs before handoff")
         return 1
     return 0

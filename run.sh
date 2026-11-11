@@ -46,6 +46,7 @@ CDR_PARATOPE_MIN_CONTACTS="1"
 CDR_EXCLUDE_POSITIONS=""
 
 MODE="single"
+BATCH_LAYOUT="table"; BINDER_CHAIN="first"; PLAN=0; CHECK_SITES=""; BATCH_SOURCE_COUNT=0
 TARGET_ONLY=0
 EXPLICIT_TARGET_ONLY=0
 CHILD_PIDS=()
@@ -63,11 +64,11 @@ kill_tree() {
 cleanup_children() {
   local p
   for p in "${CHILD_PIDS[@]:-}"; do
-    [[ -n "$p" ]] && kill_tree "$p" TERM
+    [[ -n "$p" && "$(ps -o ppid= -p "$p" 2>/dev/null)" -eq "$$" ]] && kill_tree "$p" TERM
   done
   sleep 2
   for p in "${CHILD_PIDS[@]:-}"; do
-    [[ -n "$p" ]] && kill_tree "$p" KILL
+    [[ -n "$p" && "$(ps -o ppid= -p "$p" 2>/dev/null)" -eq "$$" ]] && kill_tree "$p" KILL
   done
 }
 trap 'echo; warn "중단 요청 -> 실행 중인 예측(자손 포함)을 종료합니다"; cleanup_children; exit 130' INT TERM
@@ -113,6 +114,10 @@ Boltz-2 나노바디 예측 파이프라인
 
 [3] 배치 스크리닝 (여러 나노바디/항원을 순차 실행 + 정렬 가능한 표 리포트)
   ./run.sh --batch inputs/batch.tsv --name screen1
+  ./run.sh --target antigen.fasta --binders candidates.fasta --name screen1
+  ./run.sh --complex-fasta pairs.fasta --binder-chain first --name screen1
+  --plan                 입력·후보·요청 모델 수만 확인 (GPU 예측 없음)
+  --check-sites A:45,67  항원 FASTA 위치의 예측 접촉을 결과 표에 집계 (배치)
   ./run.sh --batch inputs/batch.tsv --name screen1 --jobs nb03,nb07   # 일부만 재실행
   ./run.sh --batch inputs/batch.tsv --name screen1 --force            # 전체 재실행
 
@@ -175,7 +180,12 @@ while [[ $# -gt 0 ]]; do
     --nanobody) NANOBODY="$2"; shift 2;;
     --name) NAME="$2"; shift 2;;
     --yaml) YAML="$2"; MODE="yaml"; shift 2;;
-    --batch) BATCH="$2"; MODE="batch"; shift 2;;
+    --batch|--binders|--complex-fasta)
+      case "$1" in --binders) BATCH_LAYOUT="binders";; --complex-fasta) BATCH_LAYOUT="complex";; esac
+      BATCH_SOURCE_COUNT=$((BATCH_SOURCE_COUNT+1)); BATCH="$2"; MODE="batch"; shift 2;;
+    --binder-chain) BINDER_CHAIN="$2"; shift 2;;
+    --plan) PLAN=1; shift;;
+    --check-sites) CHECK_SITES="$2"; shift 2;;
     --jobs) JOBS_FILTER="$2"; shift 2;;
     --report-only) RUN_DIR="$2"; MODE="report"; shift 2;;
     --batch-report) RUN_DIR="$2"; MODE="batch-report"; shift 2;;
@@ -325,6 +335,126 @@ case "$MSA_MODE" in
   *) die "--msa 는 server, empty, cache 중 하나여야 합니다 (입력값: $MSA_MODE)";;
 esac
 
+[[ "$BATCH_SOURCE_COUNT" -le 1 ]] || die "배치 입력 방식은 하나만 선택하세요."
+if [[ "$BATCH_SOURCE_COUNT" != 0 ]]; then
+  [[ "$MODE" == "batch" && -z "$NANOBODY" && -z "$YAML" && "$TARGET_ONLY" == 0 && -z "$RUN_DIR" && -z "$SERVE_DIR" ]] || die "배치와 다른 실행 모드를 함께 쓸 수 없습니다."
+  [[ "$BATCH_LAYOUT" == "binders" || -z "$TARGET" ]] || die "--target은 --binders와 함께 지정하세요."
+fi
+[[ "$BINDER_CHAIN" == "first" || ( "$BINDER_CHAIN" == "last" && "$BATCH_LAYOUT" == "complex" ) ]] || die "--binder-chain은 --complex-fasta에서 first 또는 last입니다."
+[[ "$PLAN" == 0 || "$MODE" == "batch" ]] || die "--plan은 배치 입력과 함께 지정하세요."
+[[ -z "$CHECK_SITES" || "$MODE" == "batch" || "$MODE" == "batch-report" ]] || die "--check-sites는 배치 또는 --batch-report와 함께 지정하세요."
+
+do_serve() {
+  local dir="$SERVE_DIR"
+  [[ -f "$dir" ]] && dir="$(dirname -- "$dir")"
+  [[ -f "$dir/index.html" ]] || die "리포트 index.html 이 없습니다: $dir/index.html
+  --doctor 는 환경 점검만, --serve 는 이미 생성된 리포트 열기만 수행합니다.
+  완료된 리포트 확인: ./run.sh --list
+  first_run 생성 예시: ./run.sh --name first_run (완료 후 리포트를 여세요)"
+  local route="/"
+  dir="$(cd -- "$dir" && pwd)"
+  if [[ "${dir##*/}" == report && -f "$dir/summary.tsv" && -d "$dir/../_logs" ]]; then
+    dir="$(dirname -- "$dir")"
+    route="/report/"
+  fi
+  log "웹서버 시작: http://127.0.0.1:$PORT$route  (Ctrl+C 종료, 로컬 접속만 허용)"
+  ( cd "$dir" && "$PY" -m http.server "$PORT" --bind 127.0.0.1 )
+}
+
+do_list() {
+  "$PY" - "$OUT_ROOT" "$GEN_ROOT" <<'PYEOF'
+import glob, json, os, sys
+out_root, gen_root = sys.argv[1], sys.argv[2]
+rows = []
+def primary(m):
+    p = m.get("primary_interface") or {}
+    iptm = p.get("iptm", (m.get("boltz_pair_iptm") or {}).get("nanobody_in_antigen_frame"))
+    ipsae = p.get("ipsae", ((m.get("ipsae") or {}).get("max") or {}).get("ipsae"))
+    return iptm, ipsae
+
+def num(v):
+    return v if isinstance(v, (int, float)) else None
+
+for d in sorted(glob.glob(os.path.join(out_root, "*"))):
+    if not os.path.isdir(d):
+        continue
+    name = os.path.basename(d)
+    report = os.path.join(d, "report", "index.html")
+    has_report = "O" if os.path.exists(report) else "-"
+    if name.startswith("batch_"):
+        # M-01: 표시 코호트는 디렉터리 수가 아니라 canonical manifest 를 따른다.
+        # (과거 코호트의 잔존 결과 폴더가 있으면 디렉터리 수가 더 크게 보인다.)
+        man_path = os.path.join(gen_root, name, "manifest.json")
+        job_names = None
+        if os.path.exists(man_path):
+            try:
+                mj = json.load(open(man_path))
+                if not mj.get("errors"):
+                    job_names = [j["name"] for j in mj.get("jobs", [])]
+            except Exception:
+                job_names = None
+        if job_names is not None:
+            subs = [os.path.join(d, jn, "analysis", "results.json") for jn in job_names]
+            subs = [p for p in subs if os.path.exists(p)]
+            count_label = f"{len(job_names)} job"
+        else:
+            subs = sorted(glob.glob(os.path.join(d, "*", "analysis", "results.json")))
+            count_label = f"{len(subs)} job"
+        best = None
+        for p in subs:
+            try:
+                m = json.load(open(p))["models"][0]
+            except Exception:
+                continue
+            key = num(primary(m)[0])
+            if key is not None and (best is None or key > best[0]):
+                best = (key, m)
+        if best:
+            _iptm, _ipsae = primary(best[1])
+            rows.append((name, "배치", count_label, f"{best[0]:.3f}",
+                         f"{_ipsae:.3f}" if isinstance(_ipsae, (int, float)) else "-", "-", has_report))
+        else:
+            rows.append((name, "배치", count_label, "-", "-", "-", has_report))
+        continue
+    res = os.path.join(d, "analysis", "results.json")
+    if not os.path.exists(res):
+        rows.append((name, "단일", "미완료", "-", "-", "-", has_report))
+        continue
+    try:
+        r = json.load(open(res))
+        m = r["models"][0]
+    except Exception:
+        rows.append((name, "단일", "읽기 실패", "-", "-", "-", has_report))
+        continue
+    _dqd = m.get("dockq") or {}
+    dq = _dqd.get("headline", _dqd.get("best_dockq"))
+    _iptm, _ipsae = primary(m)
+    _ptm = (m.get("boltz") or {}).get("ptm")
+    _score = _iptm if _iptm is not None else _ptm
+    rows.append((name, "단일", f"{len(r['models'])} model",
+                 f"{_score:.3f}" if isinstance(_score, (int, float)) else "-",
+                 f"{_ipsae:.3f}" if isinstance(_ipsae, (int, float)) else "-",
+                 f"{dq:.3f}" if isinstance(dq, (int, float)) else "-", has_report))
+if not rows:
+    print("아직 실행 결과가 없습니다. 먼저 ./run.sh 를 실행하세요.")
+    sys.exit(0)
+w = max(len(r[0]) for r in rows) + 2
+print(f"{'이름':<{w}}{'종류':<5}{'모델':<11}{'ipTM/pTM':>9}{'ipSAE':>7}{'DockQ':>8}{'리포트':>8}")
+print("-" * (w + 46))
+for name, kind, n, a, b, c, rep in rows:
+    print(f"{name:<{w}}{kind:<5}{n:<11}{a:>9}{b:>7}{c:>8}{rep:>8}")
+print()
+print("리포트 열기: ./run.sh --serve outputs/<이름>/report")
+PYEOF
+}
+
+if [[ "$MODE" == list || "$MODE" == serve ]]; then
+  PY=python3
+  [[ -z "$ENV_DIR" || ! -x "$ENV_DIR/bin/python" ]] || PY="$ENV_DIR/bin/python"
+  if [[ "$MODE" == list ]]; then do_list; else do_serve; fi
+  exit $?
+fi
+
 detect_env || die "Boltz 실행 환경을 찾지 못했습니다. 'bash setup.sh' 로 설치하거나 BOLTZ_ENV=/path/to/env 로 지정하세요."
 PY="$ENV_DIR/bin/python"
 BOLTZ="$ENV_DIR/bin/boltz"
@@ -332,6 +462,22 @@ BOLTZ="$ENV_DIR/bin/boltz"
 export PATH="$ENV_DIR/bin:$PATH"
 [[ -n "$GPU" ]] && export CUDA_VISIBLE_DEVICES="$GPU"
 log "실행 환경: $ENV_DIR ($("$PY" --version 2>&1))"
+batch_prepare_args() {
+  PREPARE_ARGS=(--batch "$BATCH" --name "$1" --outdir "$GEN_ROOT" --msa "$MSA_MODE" --layout "$BATCH_LAYOUT" --binder-chain "$BINDER_CHAIN")
+  if [[ "$BATCH_LAYOUT" != "table" ]]; then
+    [[ -z "$TARGET" ]] || PREPARE_ARGS+=(--target "$TARGET")
+    [[ -z "$HOTSPOT" ]] || PREPARE_ARGS+=(--hotspot "$HOTSPOT")
+    [[ -z "$REFERENCE" ]] || PREPARE_ARGS+=(--reference "$REFERENCE")
+  fi
+  [[ -z "$CHECK_SITES" ]] || PREPARE_ARGS+=(--check-sites "$CHECK_SITES")
+  return 0
+}
+if [[ "$PLAN" == 1 ]]; then
+  batch_prepare_args "${NAME:-$(basename "${BATCH%.*}")}"
+  "$PY" "$SCRIPTS/prepare_batch.py" "${PREPARE_ARGS[@]}" --plan --samples "$SAMPLES" --jobs "$JOBS_FILTER"
+  exit $?
+fi
+
 _other_envs=()
 for _c in "$HOME/miniforge3/envs/boltz2" "$HOME/miniforge3/envs/boltz" "$HOME/miniforge3/envs/ncf-boltz2" \
           "$HOME/miniconda3/envs/boltz2" "$HOME/mambaforge/envs/boltz2"; do
@@ -442,6 +588,14 @@ validate_run_name_or_die() {
   local name="$1" root="$2"
   "$PY" "$SCRIPTS/runtime_state.py" validate-name "$name" --root "$root" >/dev/null \
     || die "안전하지 않은 실행 이름입니다: $name"
+}
+
+# Keep two invocations from rewriting the same generated inputs or outputs.
+lock_run_directory() {
+  mkdir -p -- "$1"
+  exec 9<"$1"
+  "$PY" -c 'import fcntl; fcntl.flock(9, fcntl.LOCK_EX | fcntl.LOCK_NB)' 2>/dev/null ||
+    die "이 실행 폴더를 다른 작업에서 사용 중입니다: $1"
 }
 
 prediction_dir_from_boltz_dir() {
@@ -644,7 +798,7 @@ run_analysis() {
 run_report() {
   local out_dir="$1"
   local args=(--results "$out_dir/analysis/results.json" --outdir "$out_dir/report")
-  [[ "$NO_EMBED" == "1" ]] && args+=(--no-embed)
+  [[ "$NO_EMBED" == "1" && "$MODE" != "batch" ]] && args+=(--no-embed)
   "$PY" "$SCRIPTS/make_report.py" "${args[@]}"
 }
 
@@ -698,10 +852,12 @@ do_single() {
     name="${NAME:-$(basename "$yaml" .yaml)}"
     validate_run_name_or_die "$name" "$OUT_ROOT"
     validate_run_name_or_die "$name" "$GEN_ROOT"
+    lock_run_directory "$OUT_ROOT/$name"
     log "사용자 YAML 사용: $yaml"
   else
     validate_run_name_or_die "$name" "$OUT_ROOT"
     validate_run_name_or_die "$name" "$GEN_ROOT"
+    lock_run_directory "$OUT_ROOT/$name"
     if [[ "$TARGET_ONLY" != "1" ]]; then
       [[ -f "$nb" ]] || die "나노바디 FASTA가 없습니다: $nb (타겟 단독이면 --target-only)"
     fi
@@ -816,43 +972,27 @@ gpu_free_mb() {
 }
 
 do_batch() {
-  local batch_name="${NAME:-$(basename "$BATCH" .tsv)}"
+  local batch_name="${NAME:-$(basename "${BATCH%.*}")}"
   validate_run_name_or_die "$batch_name" "$OUT_ROOT"
   validate_run_name_or_die "$batch_name" "$GEN_ROOT"
-  if [[ "$NO_EMBED" == "1" ]]; then
-    die "--no-embed 는 현재 배치 실행 중 개별 job 리포트에서 지원하지 않습니다. 완료 후 --batch-report ... --no-embed 를 사용하세요"
-  fi
   require_runtime_deps
-  [[ -n "$HOTSPOT" ]] && warn "--batch 모드에서는 --hotspot 이 무시됩니다 (표의 hotspot 열을 쓰세요)"
-  [[ -n "$REFERENCE" ]] && warn "--batch 모드에서는 전역 --reference 가 무시됩니다 (표의 reference 열을 쓰세요)"
+  [[ "$BATCH_LAYOUT" == table && -n "$HOTSPOT" ]] && warn "--batch 모드에서는 --hotspot 이 무시됩니다 (표의 hotspot 열을 쓰세요)"
+  [[ "$BATCH_LAYOUT" == table && -n "$REFERENCE" ]] && warn "--batch 모드에서는 전역 --reference 가 무시됩니다 (표의 reference 열을 쓰세요)"
   local gen_dir="$GEN_ROOT/batch_$batch_name"
   local jobs_dir="$OUT_ROOT/batch_$batch_name"
-  echo "  배치 입력 표  : $BATCH"
+  validate_run_name_or_die "batch_$batch_name" "$OUT_ROOT"
+  lock_run_directory "$jobs_dir"
+  echo "  배치 입력 파일  : $BATCH"
   echo "  배치 출력 폴더: $jobs_dir"
-  local reuse=0
-  if [[ -f "$gen_dir/manifest.json" && "$FORCE" != "1" ]]; then
-    reuse="$("$PY" - "$SCRIPTS" "$gen_dir/manifest.json" "$BATCH" "$MSA_MODE" <<'PYEOF'
-import sys
-from pathlib import Path
-sys.path.insert(0, sys.argv[1])
-from prepare_batch import manifest_reusable
-print(int(manifest_reusable(Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[4])))
-PYEOF
-)"
-  fi
-  if [[ "$reuse" == "1" ]]; then
-    log "기존 manifest 재사용: $gen_dir/manifest.json (표/파라미터가 같음)"
-  else
-    "$PY" "$SCRIPTS/prepare_batch.py" --batch "$BATCH" --name "$batch_name" \
-          --outdir "$GEN_ROOT" --msa "$MSA_MODE" || die "배치 입력 준비 실패"
-  fi
-
+  batch_prepare_args "$batch_name"
+  [[ "$FORCE" == 1 ]] || PREPARE_ARGS+=(--reuse)
+  "$PY" "$SCRIPTS/prepare_batch.py" "${PREPARE_ARGS[@]}" || die "배치 입력 준비 실패"
   mapfile -t job_lines < <("$PY" - "$gen_dir/manifest.json" <<'PYEOF'
 import json, sys
 m = json.load(open(sys.argv[1]))
 for j in m["jobs"]:
     print("\t".join([j["name"], j["yaml"], j["meta"],
-                     j.get("reference") or "\x01", j.get("notes") or "\x01"]))
+                     j.get("reference") or "\x01"]))
 PYEOF
 )
   if [[ -n "$JOBS_FILTER" ]]; then
@@ -886,6 +1026,7 @@ PYEOF
   mkdir -p "$jobs_dir"
   local n_total=${#selected_job_lines[@]} n_ok=0 n_skip=0 n_fail=0
   local fail_list=()
+  log "선택 후보 $n_total · 후보당 $SAMPLES 모델 · 요청 모델 $((n_total * SAMPLES)) · 동시 후보 $CONCURRENCY"
   local t_start; t_start="$(date +%s)"
   local -a pids=() pnames=()
   mkdir -p "$jobs_dir/_logs"
@@ -898,6 +1039,7 @@ PYEOF
     job_index=$((job_index + 1))
     local jname jyaml jmeta jref jnotes
     IFS=$'\t' read -r jname jyaml jmeta jref jnotes <<< "$line"
+    validate_run_name_or_die "$jname" "$jobs_dir"
     # 빈 필드 sentinel 복원 + 참조 경로 검증 (노트가 reference 로 새는 문제 방지)
     [[ "$jref" == $'\x01' ]] && jref=""
     [[ "$jnotes" == $'\x01' ]] && jnotes=""
@@ -935,7 +1077,7 @@ PYEOF
         local free
         free="$(gpu_free_mb "${gpu_idx:-${gpu_list[0]:-}}")"
         if [[ "${free:-0}" -lt "$need" ]]; then
-          eff=$((running_now + 1))
+          eff=1
           [[ "$eff" -lt 1 ]] && eff=1
           warn "GPU 여유 ${free}MB < ${need}MB - 이 job 부터는 동시 ${eff} 로 낮춥니다"
         fi
@@ -950,7 +1092,7 @@ PYEOF
       sleep 5
     done
 
-    local gpu_note=""
+    local gpu_note="" job_pid
     if [[ -n "$gpu_idx" ]]; then
       gpu_note=", GPU $gpu_idx"
       ( export CUDA_VISIBLE_DEVICES="$gpu_idx"
@@ -958,9 +1100,11 @@ PYEOF
     else
       run_one_job "$jobs_dir" "$jname" "$jyaml" "$jmeta" "$jref" &
     fi
+    job_pid=$!
+    pids+=("$job_pid"); pnames+=("$jname"); CHILD_PIDS+=("$job_pid")
     launched=$((launched + 1))
     log "===== JOB $job_index/$n_total : $jname 시작 (동시 $eff, 여유 VRAM $(gpu_free_mb "${gpu_idx:-}")MB$gpu_note) ====="
-    pids+=("$!"); pnames+=("$jname"); CHILD_PIDS+=("$!")
+    log "계산 로그: $jobs_dir/_logs/$jname.log"
   done
 
   # 종료 대기
@@ -986,11 +1130,15 @@ PYEOF
     fi
     i=$((i + 1))
   done
-  rm -f "$jobs_dir"/*/.status 2>/dev/null || true
+  CHILD_PIDS=()
 
   local report_rc=0
+  local -a report_args=()
+  [[ "$NO_EMBED" == 0 ]] || report_args+=(--no-embed)
+  [[ -z "$JOBS_FILTER" ]] || report_args+=(--selected-jobs "$JOBS_FILTER")
+  [[ -z "$CHECK_SITES" ]] || report_args+=(--check-sites "$CHECK_SITES")
   "$PY" "$SCRIPTS/batch_report.py" --manifest "$gen_dir/manifest.json" --jobs-dir "$jobs_dir" \
-        --outdir "$jobs_dir/report" || report_rc=$?
+        --outdir "$jobs_dir/report" "${report_args[@]}" || report_rc=$?
   [[ "$report_rc" == "0" ]] || warn "배치 리포트에 불완전한 job 이 있습니다 (exit $report_rc)"
   echo
   if [[ -n "$JOBS_FILTER" ]]; then
@@ -1021,6 +1169,8 @@ do_report_only() {
   if [[ "$NO_EMBED" == "1" ]]; then
     die "--no-embed 는 현재 단일 리포트 재생성에서 지원하지 않습니다 (배치 리포트 재생성만 지원)"
   fi
+  [[ -d "$out_dir" ]] || die "실행 폴더 없음: $out_dir"
+  lock_run_directory "$out_dir"
   require_runtime_deps
   local args=(--run-dir "$out_dir")
   if [[ -f "$out_dir/analysis/results.json" ]]; then
@@ -1072,104 +1222,6 @@ do_cdr_library() {
   if [[ -n "$CDR_BATCH_OUT" ]]; then
     printf '  배치 표로 실행: ./run.sh --batch %s --name cdr_screen1\n' "$CDR_BATCH_OUT"
   fi
-}
-
-do_serve() {
-  local dir="$SERVE_DIR"
-  [[ -f "$dir" ]] && dir="$(dirname -- "$dir")"
-  [[ -f "$dir/index.html" ]] || die "리포트 index.html 이 없습니다: $dir/index.html
-  --doctor 는 환경 점검만, --serve 는 이미 생성된 리포트 열기만 수행합니다.
-  완료된 리포트 확인: ./run.sh --list
-  first_run 생성 예시: ./run.sh --name first_run (완료 후 리포트를 여세요)"
-  log "웹서버 시작: http://127.0.0.1:$PORT/  (Ctrl+C 종료, 로컬 접속만 허용)"
-  ( cd "$dir" && "$PY" -m http.server "$PORT" --bind 127.0.0.1 )
-}
-
-do_list() {
-  "$PY" - "$OUT_ROOT" "$GEN_ROOT" <<'PYEOF'
-import glob, json, os, sys
-out_root, gen_root = sys.argv[1], sys.argv[2]
-rows = []
-def primary(m):
-    p = m.get("primary_interface") or {}
-    iptm = p.get("iptm", (m.get("boltz_pair_iptm") or {}).get("nanobody_in_antigen_frame"))
-    ipsae = p.get("ipsae", ((m.get("ipsae") or {}).get("max") or {}).get("ipsae"))
-    return iptm, ipsae
-
-def num(v):
-    return v if isinstance(v, (int, float)) else None
-
-for d in sorted(glob.glob(os.path.join(out_root, "*"))):
-    if not os.path.isdir(d):
-        continue
-    name = os.path.basename(d)
-    report = os.path.join(d, "report", "index.html")
-    has_report = "O" if os.path.exists(report) else "-"
-    if name.startswith("batch_"):
-        # M-01: 표시 코호트는 디렉터리 수가 아니라 canonical manifest 를 따른다.
-        # (과거 코호트의 잔존 결과 폴더가 있으면 디렉터리 수가 더 크게 보인다.)
-        man_path = os.path.join(gen_root, name, "manifest.json")
-        job_names = None
-        if os.path.exists(man_path):
-            try:
-                mj = json.load(open(man_path))
-                if not mj.get("errors"):
-                    job_names = [j["name"] for j in mj.get("jobs", [])]
-            except Exception:
-                job_names = None
-        if job_names is not None:
-            subs = [os.path.join(d, jn, "analysis", "results.json") for jn in job_names]
-            subs = [p for p in subs if os.path.exists(p)]
-            count_label = f"{len(job_names)} job"
-        else:
-            subs = sorted(glob.glob(os.path.join(d, "*", "analysis", "results.json")))
-            count_label = f"{len(subs)} job"
-        best = None
-        for p in subs:
-            try:
-                m = json.load(open(p))["models"][0]
-            except Exception:
-                continue
-            key = num(primary(m)[0]) or 0
-            if best is None or key > best[0]:
-                best = (key, m)
-        if best:
-            _iptm, _ipsae = primary(best[1])
-            rows.append((name, "배치", count_label, f"{best[0]:.3f}",
-                         f"{_ipsae:.3f}" if isinstance(_ipsae, (int, float)) else "-", "-", has_report))
-        else:
-            rows.append((name, "배치", count_label, "-", "-", "-", has_report))
-        continue
-    res = os.path.join(d, "analysis", "results.json")
-    if not os.path.exists(res):
-        rows.append((name, "단일", "미완료", "-", "-", "-", has_report))
-        continue
-    try:
-        r = json.load(open(res))
-        m = r["models"][0]
-    except Exception:
-        rows.append((name, "단일", "읽기 실패", "-", "-", "-", has_report))
-        continue
-    _dqd = m.get("dockq") or {}
-    dq = _dqd.get("headline", _dqd.get("best_dockq"))
-    _iptm, _ipsae = primary(m)
-    _ptm = (m.get("boltz") or {}).get("ptm")
-    _score = _iptm if _iptm is not None else _ptm
-    rows.append((name, "단일", f"{len(r['models'])} model",
-                 f"{_score:.3f}" if isinstance(_score, (int, float)) else "-",
-                 f"{_ipsae:.3f}" if isinstance(_ipsae, (int, float)) else "-",
-                 f"{dq:.3f}" if isinstance(dq, (int, float)) else "-", has_report))
-if not rows:
-    print("아직 실행 결과가 없습니다. 먼저 ./run.sh 를 실행하세요.")
-    sys.exit(0)
-w = max(len(r[0]) for r in rows) + 2
-print(f"{'이름':<{w}}{'종류':<5}{'모델':<11}{'ipTM/pTM':>9}{'ipSAE':>7}{'DockQ':>8}{'리포트':>8}")
-print("-" * (w + 46))
-for name, kind, n, a, b, c, rep in rows:
-    print(f"{name:<{w}}{kind:<5}{n:<11}{a:>9}{b:>7}{c:>8}{rep:>8}")
-print()
-print("리포트 열기: ./run.sh --serve outputs/<이름>/report")
-PYEOF
 }
 
 do_doctor() {
@@ -1243,7 +1295,10 @@ case "$MODE" in
     bname="$(basename "$bdir" | sed 's/^batch_//')"
     bman="$GEN_ROOT/batch_$bname/manifest.json"
     [[ -f "$bman" ]] || die "manifest 를 찾을 수 없습니다: $bman (--batch 로 실행한 배치만 재생성 가능)"
+    [[ -d "$bdir" ]] || die "배치 실행 폴더 없음: $bdir"
+    lock_run_directory "$bdir"
     br_args=(--manifest "$bman" --jobs-dir "$bdir" --outdir "$bdir/report")
+    [[ -z "$CHECK_SITES" ]] || br_args+=(--check-sites "$CHECK_SITES")
     [[ "$NO_EMBED" == "1" ]] && br_args+=(--no-embed)
     "$PY" "$SCRIPTS/batch_report.py" "${br_args[@]}" \
       && ok "배치 리포트 재생성: $bdir/report/index.html";;

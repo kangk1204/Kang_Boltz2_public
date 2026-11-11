@@ -393,7 +393,7 @@ class BatchAuditTests(unittest.TestCase):
             with patch.object(sys, "argv", argv):
                 got = batch_report.main()
 
-            self.assertEqual(got, 0)
+            self.assertNotEqual(got, 0)  # Both manifest jobs are missing.
             header = (outdir / "summary.tsv").read_text(encoding="utf-8").splitlines()[0]
             html = (outdir / "index.html").read_text(encoding="utf-8")
             self.assertIn("iptm_nb", header)

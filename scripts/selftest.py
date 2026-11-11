@@ -11,6 +11,7 @@ import argparse
 import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -79,7 +80,7 @@ def test_contact_and_interface():
     print("  [ok] contacts / interface report")
 
 
-def test_fasta_and_job(tmp=Path("/tmp/opencode/selftest")):
+def test_fasta_and_job(tmp):
     import prepare_input as P
 
     tmp.mkdir(parents=True, exist_ok=True)
@@ -260,7 +261,7 @@ def test_target_only_guards():
     print("  [ok] target-only 가드 (hotspot 차단)")
 
 
-def test_cdr_library_exhaustive(tmp=Path("/tmp/opencode/selftest_ex")):
+def test_cdr_library_exhaustive():
     """exhaustive 모드가 특정 k 에 편향되지 않는지 (직접 생성 없이 열거 함수만)."""
     import make_cdr_library as L
 
@@ -352,7 +353,7 @@ def test_ipsae_max_key_normalization():
     print("  [ok] max ipSAE 키 정규화 (R04)")
 
 
-def test_cdr_library_partial_generation(tmp=Path("/tmp/opencode/selftest_cdr")):
+def test_cdr_library_partial_generation(tmp):
     """RR07 회귀: mixed-k random 생성이 요청 수를 못 채우면 부분 성공으로 끝나지 않아야 한다."""
     import make_cdr_library as L
 
@@ -405,7 +406,7 @@ def test_display_formatter():
     print("  [ok] 표시 포맷터 HTML 경계 (R6-01)")
 
 
-def test_render_sweep(run_dir, tmp=Path("/tmp/opencode/selftest_sweep")):
+def test_render_sweep(run_dir, tmp):
     """R7 회귀: 결과 JSON 의 모든 문자열에 marker 를 넣어 렌더링해도
     HTML 태그로 해석되는 값이 없어야 한다 (직접 보간 경로 검출)."""
     import shutil
@@ -454,7 +455,6 @@ def test_render_sweep(run_dir, tmp=Path("/tmp/opencode/selftest_sweep")):
             for v in obj:
                 sweep(v, parent_key)
 
-    shutil.rmtree(tmp, ignore_errors=True)
     shutil.copytree(run_dir, tmp / "run")
     res = tmp / "run" / "analysis" / "results.json"
     data = json.loads(res.read_text(encoding="utf-8"))
@@ -600,7 +600,6 @@ def test_conservative_choices_match_selection():
 
 def test_report_same_file_guard():
     """A-20: results.json 이 이미 outdir 안에 있어도 리포트 생성이 실패하지 않아야 한다."""
-    import tempfile
 
     with tempfile.TemporaryDirectory() as td:
         out = Path(td) / "report"
@@ -661,7 +660,8 @@ def main():
     test_tm_func()
     test_ipsae_pure_handcase()
     test_contact_and_interface()
-    test_fasta_and_job()
+    with tempfile.TemporaryDirectory() as scratch:
+        test_fasta_and_job(Path(scratch))
     test_role_detection()
     test_chain_pair_table()
     test_interface_plddt_uses_passed_array()
@@ -669,7 +669,8 @@ def main():
     test_hotspot_validation()
     test_library_size_exact()
     test_ipsae_max_key_normalization()
-    test_cdr_library_partial_generation()
+    with tempfile.TemporaryDirectory() as scratch:
+        test_cdr_library_partial_generation(Path(scratch))
     test_display_formatter()
     test_target_only_guards()
     test_cdr_library_exhaustive()
@@ -684,7 +685,8 @@ def main():
     test_report_same_file_guard()
     if args.run_dir:
         test_run_dir(args.run_dir)
-        test_render_sweep(args.run_dir)
+        with tempfile.TemporaryDirectory() as scratch:
+            test_render_sweep(args.run_dir, Path(scratch))
     print("all tests passed")
     return 0
 
