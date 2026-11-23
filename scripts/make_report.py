@@ -330,19 +330,25 @@ def validate_results(results: dict, local_run_dir: Path | None = None) -> None:
     result_indexes = sorted(int(m.get("index")) for m in models)
     if result_indexes != checked_indexes:
         raise ValueError(f"results model indexes {result_indexes} do not match predictions {checked_indexes}")
+    checked_by_index = {record["index"]: record for record in checked}
     for m in models:
-        idx = m.get("index", "?")
+        idx = int(m["index"])
+        actual = checked_by_index[idx]
         required = (
-            ("cif", "CIF"),
-            ("confidence_json", "confidence JSON"),
-            ("pae_npz", "PAE npz"),
+            ("cif", "CIF", "structure"),
+            ("confidence_json", "confidence JSON", "confidence"),
+            ("pae_npz", "PAE npz", "pae"),
         )
-        for key, label in required:
+        if m.get("plddt_npz"):
+            required += (("plddt_npz", "pLDDT npz", "plddt"),)
+        for key, label, bundle_key in required:
             value = m.get(key)
             if not value or not Path(value).is_file():
                 raise ValueError(f"model_{idx}: missing {label}: {value or '-'}")
             if local_run_dir and not _is_within(Path(value), local_run_dir):
                 raise ValueError(f"model_{idx}: {label} is outside this run copy: {value}")
+            if Path(value).resolve() != Path(actual[bundle_key]).resolve():
+                raise ValueError(f"model_{idx}: {label} differs from the validated prediction")
 
 
 def esc(v):
@@ -534,6 +540,8 @@ def chain_role_label(results, ch):
 
 def build_summary_table(results):
     target_only = not results.get("nanobody_chain")
+    show_burial = not target_only and any(m.get("paratope_burial") for m in results["models"])
+    burial_head = "<th>CDR 면적 (%)</th><th>프레임워크 면적 (%)</th>" if show_burial else ""
     n_chains = len(results["chains"])
     multi_note = ("" if n_chains <= 2 else
                   f'<br><b>체인 {n_chains}개 입력</b>: 대표 ipTM/ipSAE는 항원 체인 union 기준입니다. '
@@ -566,6 +574,11 @@ def build_summary_table(results):
 {chain_cells}
 </tr>""")
             continue
+        burial = e.get("paratope_burial") or {}
+        burial_cells = (
+            f"<td>{fmt(burial.get('cdr_pct'), 1)}</td><td>{fmt(burial.get('framework_pct'), 1)}</td>"
+            if show_burial else ""
+        )
         rows.append(f"""<tr class="{'best' if is_best else ''}">
 <td class="l">model_{fmt_num(e.get('index'), 0)}{' ★' if is_best else ''}</td>
 <td>{fmt(nb_ag)} <span class="badge {css_i}">{lab_i}</span></td>
@@ -581,7 +594,7 @@ def build_summary_table(results):
 <td>{fmt(plddt_chain.get('mean'), 1)} <span class="badge {css_p}">{lab_p}</span></td>
 <td>{fmt(iface.get('pae_mean_ab'), 2)}</td>
 <td>{fmt_num(dq)}{(' <span class="badge ' + css_q + '">' + lab_q + '</span>') if dq is not None else ''}</td>
-</tr>""")
+{burial_cells}</tr>""")
     if target_only:
         chain_heads = "".join(f"<th>체인 {esc(c['id'])}<br>pLDDT</th>" for c in results["chains"])
         return f"""<div class="tw"><table><thead><tr>
@@ -594,7 +607,7 @@ def build_summary_table(results):
 <th class="l">모델</th><th>대표 ipTM<br>(nb|ag)</th><th>pair ipTM<br>(ag|nb)</th><th>pTM</th>
 <th>대표 ipSAE</th><th>pair ipSAE<br>d0chn</th><th>pair ipSAE<br>d0dom</th><th>pair ipTM<br>d0chn</th>
 <th>pDockQ</th><th>pDockQ2</th><th>LIS</th><th>나노바디<br>pLDDT</th>
-<th>인터페이스<br>PAE(Å)</th><th>DockQ</th>
+<th>인터페이스<br>PAE(Å)</th><th>DockQ</th>{burial_head}
 </tr></thead><tbody>{''.join(rows)}</tbody></table></div>
 <p class="note">★ = 기본 선택 모델 (분석의 primary interface score 기준 정렬).
 ipTM/ipSAE의 "(X|Y)" 표기는 <b>Y를 기준 좌표계(frame)로 정렬했을 때 X가 얼마나 잘 배치되었는지</b>를
@@ -630,6 +643,31 @@ def build_chain_pair_table(results, entry):
 def _pct(v):
     x = safe_float(v)
     return "-" if x is None else f"{100 * x:.0f}%"
+
+
+def paratope_burial_html(entry):
+    burial = entry.get("paratope_burial") or {}
+    status = burial.get("status")
+    heading = "<h4>나노바디 접촉 면적 (CDR·프레임워크)</h4>"
+    if status != "ok":
+        reason = {
+            "no_interface": "항원에 가려진 나노바디 표면이 없습니다.",
+            "cdr_unavailable": "CDR 번호를 읽을 수 없습니다. ANARCI·HMMER 설치와 입력 서열을 확인하세요.",
+            "biopython_unavailable": "실행 환경에 Biopython이 필요합니다.",
+            "coordinates_unavailable": "체인 또는 잔기 좌표를 맞출 수 없습니다.",
+        }.get(status, "이전 보고서입니다. 저장한 결과로 리포트를 다시 만들면 항목이 추가됩니다.")
+        return f'{heading}<p class="note">{reason}</p>'
+    areas = burial["area_A2"]
+    unassigned = safe_float(burial.get("unassigned_pct")) or 0
+    extra = f" · 번호 밖 {fmt(unassigned, 1)}%" if unassigned else ""
+    return (
+        f'{heading}<p><b>CDR {fmt(burial["cdr_pct"], 1)}% · '
+        f'프레임워크 {fmt(burial["framework_pct"], 1)}%</b>{extra} · '
+        f'전체 {fmt(burial["total_A2"], 1)} Å²</p>'
+        '<p class="note">항원에 가려진 나노바디 표면에서 각 부위가 차지하는 비율입니다 (IMGT). '
+        f'CDR1 {fmt(areas["CDR1"], 1)} Å² · CDR2 {fmt(areas["CDR2"], 1)} Å² · '
+        f'CDR3 {fmt(areas["CDR3"], 1)} Å².</p>'
+    )
 
 
 def build_chain_table(results, entry):
@@ -821,6 +859,7 @@ def build_model_section(results, entry, allowed_roots=None):
    {build_chain_pair_table(results, entry)}
  </div>
  <div><h4>CDR / 인터페이스</h4>{build_cdr_table(results, entry)}
+   {"" if target_only else paratope_burial_html(entry)}
    <p class="note">파일: <span class="mono">{html.escape(Path(entry['cif']).name) if entry.get('cif') else "-"}</span>,
    <span class="mono">{html.escape(Path(entry['pae_npz']).name) if entry.get('pae_npz') else "-"}</span>,
    <span class="mono">{html.escape(Path(entry['confidence_json']).name) if entry.get('confidence_json') else "-"}</span>
@@ -914,16 +953,26 @@ pH/온도 조건 등은 반영되지 않습니다.</li>
 """
 
 
+def viewer_coordinate_text(path):
+    """Read mmCIF, converting legacy PDB coordinates for the Mol* mmCIF loader."""
+    source = Path(path)
+    if source.suffix.lower() == ".pdb":
+        import gemmi
+
+        return gemmi.read_structure(str(source)).make_mmcif_document().as_string()
+    return source.read_text(encoding="utf-8")
+
+
 def build_html(results, run_dir):
     models = results["models"]
     best = models[0]
-    structs = {m["stem"]: Path(m["cif"]).read_text(encoding="utf-8")
+    structs = {m["stem"]: viewer_coordinate_text(m["cif"])
                for m in models if m.get("cif") and Path(m["cif"]).exists()}
     labels = {}
     for m in models:
         ov = m.get("overlay") or {}
         if ov.get("path") and Path(ov["path"]).exists():
-            structs[f"overlay_{m['stem']}"] = Path(ov["path"]).read_text(encoding="utf-8")
+            structs[f"overlay_{m['stem']}"] = viewer_coordinate_text(ov["path"])
     for m in models:
         mx = m["ipsae"].get("max") or {}
         if results.get("nanobody_chain"):
@@ -1095,12 +1144,14 @@ def write_summary_tsv(results, path):
             "primary_scope", "primary_source",
             "ipSAE_d0chn", "ipSAE_d0dom", "ipTM_d0chn", "pDockQ", "pDockQ2", "LIS",
             "nanobody_pLDDT_mean", "iface_mean_PAE", "n_contacts", "DockQ", "DockQ_kind",
-            "CAPRI"]
+            "CAPRI", "CDR_buried_pct", "framework_buried_pct", "unassigned_buried_pct",
+            "nanobody_buried_A2", "paratope_burial_status"]
     lines = ["\t".join(cols)]
     for e in results["models"]:
         mx = e["ipsae"].get("max") or {}
         iface = e["interface_8A"] or {}
         primary = primary_scores(e, results)
+        burial = e.get("paratope_burial") or {}
         lines.append("\t".join(str(x) for x in [
             f"model_{e['index']}",
             _tsv_num(primary.get("iptm")),
@@ -1119,6 +1170,11 @@ def write_summary_tsv(results, path):
             _tsv_num((e.get("dockq") or {}).get("headline")),
             ((e.get("dockq") or {}).get("headline_kind") or "-"),
             ((e.get("dockq") or {}).get("capri") or "-"),
+            _tsv_num(burial.get("cdr_pct"), 2),
+            _tsv_num(burial.get("framework_pct"), 2),
+            _tsv_num(burial.get("unassigned_pct"), 2),
+            _tsv_num(burial.get("total_A2"), 2),
+            burial.get("status") or "",
         ]))
     Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
 

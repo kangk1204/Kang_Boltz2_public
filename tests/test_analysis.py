@@ -272,6 +272,25 @@ class AnalysisContractTests(unittest.TestCase):
             {"A": "antigen", "C": "antigen", "D": "antigen", "B": "nanobody"},
         )
 
+    def test_explicit_antigen_subset_replaces_saved_and_metadata_primary(self):
+        with tempfile.TemporaryDirectory() as td:
+            run = Path(td) / "subset"
+            run.mkdir()
+            _write_fake_prediction(run, chains={"A": ["ALA"], "B": ["GLY"], "C": ["SER"]})
+            metadata = run / "input.meta.json"
+            metadata.write_text(json.dumps({
+                "nanobody_chain": "B", "antigen_chain": "A",
+                "chains": [{"id": "A", "role": "antigen"}, {"id": "C", "role": "antigen"}],
+            }))
+            first = _run_analyze(run, "--metadata", str(metadata))
+            self.assertEqual(first.returncode, 0, first.stderr)
+            saved = run / "analysis" / "results.json"
+            subset = _run_analyze(run, "--restore-settings", str(saved), "--antigen-chains", "C")
+            self.assertEqual(subset.returncode, 0, subset.stderr)
+            r = json.loads(saved.read_text())
+            self.assertEqual(r["antigen_chains"], ["C"])
+            self.assertEqual(r["antigen_chain"], "C")
+
     def test_antigen_chains_option_excludes_vl_from_antigen(self):
         # Fv(VH+VL): 항원 A, VH B, VL C. --antigen-chains A 로 VL 이 항원에서 빠져야 한다.
         with tempfile.TemporaryDirectory() as td:

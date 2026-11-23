@@ -110,6 +110,99 @@ def sequence_of(tokens, chain):
     return "".join(t["aa"] for t in tokens if t["chain"] == chain)
 
 
+def _paratope_regions(binder_tokens, annotation):
+    span = annotation.get("domain_span")
+    loops = annotation.get("cdrs") or {}
+    if (not annotation.get("available") or not span
+            or not 0 <= span[0] < span[1] <= len(binder_tokens)
+            or not all(loops.get(name) for name in IMGT_CDR_RANGES)):
+        return None
+    start, stop = span
+    regions = ["unassigned"] * start + ["framework"] * (stop - start)
+    regions += ["unassigned"] * (len(binder_tokens) - stop)
+    for name in IMGT_CDR_RANGES:
+        for residue in loops[name]:
+            i = residue["seq_index"]
+            if (not start <= i < stop or regions[i] != "framework"
+                    or binder_tokens[i]["aa"] != residue["aa"]):
+                return None
+            regions[i] = name
+    return regions
+
+
+def paratope_burial(path, tokens, antigen_chains, binder_chain, annotation):
+    """Partition one binder-side buried surface, using only the stated protein partners."""
+    binder_tokens = [token for token in tokens if token["chain"] == binder_chain]
+    regions = _paratope_regions(binder_tokens, annotation)
+    if regions is None:
+        return {"status": "cdr_unavailable"}
+    try:
+        from Bio.PDB import MMCIFParser, PDBParser, ShrakeRupley
+        from Bio.PDB.PDBExceptions import PDBConstructionException
+    except ImportError:
+        return {"status": "biopython_unavailable"}
+
+    def token_key(token):
+        return token["chain"], token["resnum"], token["icode"], token["resname"]
+
+    included_chains = {*antigen_chains, binder_chain}
+    wanted = {token_key(token) for token in tokens if token["chain"] in included_chains}
+    if {key[0] for key in wanted} != included_chains:
+        return {"status": "coordinates_unavailable"}
+    parser = PDBParser(QUIET=True) if Path(path).suffix.lower() == ".pdb" else MMCIFParser(QUIET=True)
+    try:
+        model = parser.get_structure("complex", str(path))[0]
+    except (KeyError, OSError, ValueError, PDBConstructionException):
+        return {"status": "coordinates_unavailable"}
+    residues = {}
+    for chain in list(model):
+        if chain.id not in included_chains:
+            model.detach_child(chain.id)
+            continue
+        for residue in list(chain):
+            key = chain.id, residue.id[1], residue.id[2].strip(), residue.resname.upper()
+            if key not in wanted:
+                chain.detach_child(residue.id)
+                continue
+            if key in residues:
+                return {"status": "coordinates_unavailable"}
+            for atom in list(residue):
+                if atom.element in {"H", "D"}:
+                    residue.detach_child(atom.id)
+            if not len(residue) or not all(np.isfinite(atom.coord).all() for atom in residue):
+                return {"status": "coordinates_unavailable"}
+            residues[key] = residue
+    if residues.keys() != wanted:
+        return {"status": "coordinates_unavailable"}
+
+    probe_radius, sphere_points = 1.4, 480
+    sasa = ShrakeRupley(probe_radius=probe_radius, n_points=sphere_points)
+    binder_residues = [residues[token_key(token)] for token in binder_tokens]
+    sasa.compute(model, level="R")
+    bound = [residue.sasa for residue in binder_residues]
+    sasa.compute(model[binder_chain], level="R")
+    areas = dict.fromkeys((*IMGT_CDR_RANGES, "framework", "unassigned"), 0.0)
+    for region, residue, area_bound in zip(regions, binder_residues, bound, strict=True):
+        areas[region] += max(0.0, float(residue.sasa - area_bound))
+    total = sum(areas.values())
+    result = {
+        "status": "ok" if total else "no_interface",
+        "method": "Shrake–Rupley",
+        "numbering": "IMGT",
+        "probe_radius_A": probe_radius,
+        "sphere_points": sphere_points,
+        "total_A2": total,
+        "area_A2": areas,
+    }
+    if total:
+        result.update({
+            "cdr_pct": 100 * sum(areas[name] for name in IMGT_CDR_RANGES) / total,
+            "framework_pct": 100 * areas["framework"] / total,
+            "unassigned_pct": 100 * areas["unassigned"] / total,
+        })
+    return result
+
+
 # ---------------------------------------------------------------------------
 # PAE / pLDDT based metrics
 # ---------------------------------------------------------------------------
@@ -722,6 +815,8 @@ def annotate_cdrs(sequence, scheme="imgt", chain_type="H"):
         "scheme": scheme,
         "start_offset": start,
         "mismatches": mismatches,
+        # An exact, single numbered domain is needed to call its non-CDR residues framework.
+        "domain_span": [start, seq_index + 1] if len(result[1][0]) == 1 and total and not mismatches else None,
         "hit": {"id": hit.get("id"), "evalue": hit.get("evalue"), "bitscore": hit.get("bitscore")} if hit else None,
         "cdrs": dict(out),
         "cdr_sequences": {k: "".join(x["aa"] for x in v) for k, v in out.items()},

@@ -49,7 +49,7 @@ def analysis_provenance(ipsae_script: Path | str | None = None) -> dict[str, Any
     vendor = Path(ipsae_script) if ipsae_script else scripts / "vendor" / "ipsae_official.py"
     sources["ipsae_script"] = file_sha256(vendor) if vendor.is_file() else None
     packages = {}
-    for name in ("numpy", "gemmi", "DockQ", "anarci"):
+    for name in ("numpy", "gemmi", "DockQ", "anarci", "biopython"):
         try:
             packages[name] = metadata.version(name)
         except metadata.PackageNotFoundError:

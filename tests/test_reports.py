@@ -190,6 +190,54 @@ def results(tmp: Path, *, union: bool = False, samples: int = 1) -> dict:
 
 
 class ReportTests(unittest.TestCase):
+    def test_single_and_batch_reports_export_representative_paratope_geometry(self):
+        with tempfile.TemporaryDirectory() as d:
+            run = Path(d)
+            data = results(run)
+            data["models"][0]["paratope_burial"] = {
+                "status": "ok", "total_A2": 400.0,
+                "area_A2": {"CDR1": 20.0, "CDR2": 30.0, "CDR3": 60.0,
+                            "framework": 290.0, "unassigned": 0.0},
+                "cdr_pct": 27.5, "framework_pct": 72.5, "unassigned_pct": 0.0,
+            }
+            self.assertIn("27.5%", make_report.build_html(data, run))
+            single_tsv = run / "single.tsv"
+            make_report.write_summary_tsv(data, single_tsv)
+            head, row = single_tsv.read_text().splitlines()
+            values = dict(zip(head.split("\t"), row.split("\t"), strict=True))
+            self.assertEqual(float(values["CDR_buried_pct"]), 27.5)
+
+            saved = run / "analysis" / "results.json"
+            saved.parent.mkdir()
+            saved.write_text(json.dumps(data))
+            entry = batch_report.collect(saved, {"name": "job"}, "job/report/index.html", "figures", run)
+            self.assertEqual(entry["row"]["cdr_buried_pct"], 27.5)
+            self.assertIn("72.5%", entry["joins"]["tables"])
+            batch_tsv = run / "batch.tsv"
+            batch_report.write_summary_tsv(batch_tsv, [entry["row"]],
+                                           batch_report.select_active_columns([entry["row"]]))
+            head, row = batch_tsv.read_text().splitlines()
+            values = dict(zip(head.split("\t"), row.split("\t"), strict=True))
+            self.assertEqual(float(values["framework_buried_pct"]), 72.5)
+
+    def test_report_cannot_pair_scores_with_a_different_coordinate_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            run = Path(d)
+            data = results(run)
+            m = data["models"][0]
+            old_structure = run / "previous_model.pdb"
+            old_structure.write_text(Path(m["cif"]).read_text())
+            m["cif"] = str(old_structure)
+            with self.assertRaisesRegex(ValueError, "CIF.*validated prediction"):
+                make_report.validate_results(data, run)
+
+    def test_viewer_receives_mmcif_when_saved_model_is_pdb(self):
+        with tempfile.TemporaryDirectory() as d:
+            run = Path(d)
+            data = results(run)
+            page = make_report.build_html(data, run)
+            self.assertIn("_atom_site.Cartn_x", page)
+
     def test_primary_scores_prefer_antigen_union_for_multichain(self):
         m = model(union=True)
         score = make_report.primary_scores(m, {"antigen_chains": ["A", "C"], "nanobody_chain": "B"})

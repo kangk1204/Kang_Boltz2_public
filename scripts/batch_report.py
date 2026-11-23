@@ -22,10 +22,12 @@ from make_report import (
     dockq_badge,
     ipsae_badge,
     iptm_badge,
+    paratope_burial_html,
     plddt_badge,
     primary_scores,
     rebase_result_paths,
     validate_results,
+    viewer_coordinate_text,
 )
 
 
@@ -492,6 +494,7 @@ def collect(results_path: Path, job: dict, report_rel: str, fig_rel_dir: str, ou
             raise ValueError("입력 표와 저장된 결과의 서열·제약·참조가 다릅니다. 이 후보를 다시 실행하세요.")
     validate_results(results, local_run_dir)
     best = results["models"][0]
+    burial = best.get("paratope_burial") or {}
     mx = best["ipsae"].get("max") or {}
     iface = best["interface_8A"] or {}
     nb_chain = results["nanobody_chain"]
@@ -523,6 +526,9 @@ def collect(results_path: Path, job: dict, report_rel: str, fig_rel_dir: str, ou
         "nb_plddt": (best["plddt"]["per_chain"].get(nb_chain) or {}).get("mean"),
         "cdr3_plddt": cdr3, "iface_pae": iface.get("pae_mean_ab"),
         "n_contacts": iface.get("n_contacts"), "dockq": dockq,
+        "cdr_buried_pct": burial.get("cdr_pct"),
+        "framework_buried_pct": burial.get("framework_pct"),
+        "paratope_burial_status": burial.get("status"),
         "n_models": len(results["models"]),
         "primary_scope": primary.get("scope"),
         "primary_source": primary.get("source"),
@@ -610,6 +616,7 @@ def collect(results_path: Path, job: dict, report_rel: str, fig_rel_dir: str, ou
                     f"<th class='l'>서열</th><th>평균 pLDDT</th></tr></thead><tbody>{rows}</tbody></table></div>")
     iface_html = ""
     if results.get("nanobody_chain"):
+        cdr_html += paratope_burial_html(best)
         antigen_chains = results.get("antigen_chains") or [results["antigen_chain"]]
         antigen_label = ",".join(antigen_chains)
         antigen_title = "항원 union" if len(antigen_chains) > 1 else "항원"
@@ -634,10 +641,10 @@ def collect(results_path: Path, job: dict, report_rel: str, fig_rel_dir: str, ou
     cif_text = ""
     overlay_text = ""
     if embed:
-        cif_text = Path(best["cif"]).read_text(encoding="utf-8") if Path(best["cif"]).exists() else ""
+        cif_text = viewer_coordinate_text(best["cif"])
         ov = best.get("overlay") or {}
         if ov.get("path") and Path(ov["path"]).exists():
-            overlay_text = Path(ov["path"]).read_text(encoding="utf-8")
+            overlay_text = viewer_coordinate_text(ov["path"])
     chain_line = ", ".join(f"{c['id']}={c['role']}({c['n_res']}aa)" for c in results["chains"])
     return {
         "row": row,
@@ -1041,6 +1048,11 @@ def select_active_columns(rows: list[dict], check_sites: str = "") -> list[tuple
             "nb_plddt", "d_plddt", "cdr3_plddt", "d_cdr3", "iface_pae", "n_contacts",
         }
         active_cols = [c for c in COLUMNS if c[0] not in drop]
+    elif any(row.get("paratope_burial_status") for row in rows):
+        active_cols.extend([
+            ("cdr_buried_pct", "CDR 면적 (%)", "num", 1, True),
+            ("framework_buried_pct", "프레임워크 면적 (%)", "num", 1, True),
+        ])
     if check_sites:
         active_cols.extend([("requested_sites", "관심 잔기", "str", None, True),
                             ("site_hits", "접촉 잔기 수 (8 Å)", "num", 0, True),

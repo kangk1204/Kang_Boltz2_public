@@ -211,6 +211,8 @@ def resolve_roles(tokens, metadata, args):
         if nanobody in wanted:
             raise SystemExit(f"--antigen-chains 에 나노바디 체인({nanobody})이 포함됐습니다")
         antigen_chains = wanted
+        if wanted and antigen not in wanted:
+            antigen = wanted[0]
     elif restored_antigens:
         antigen_chains = [c for c in restored_antigens if c in chain_ids and c != nanobody]
     if not antigen_chains:
@@ -663,6 +665,12 @@ def analyze_model(model, tokens, chains_roles, args, cdr_info, out_dir, input_pr
         "warnings": [],
     }
 
+    if nanobody_chain and antigen_chains:
+        entry["paratope_burial"] = (
+            metrics.paratope_burial(model["cif"], model_tokens, antigen_chains, nanobody_chain, cdr_info)
+            if identity_ok else {"status": "coordinates_unavailable"}
+        )
+
     if not pae_applicable:
         reasons = []
         if not dims_ok:
@@ -1067,6 +1075,7 @@ def main():
         cdr_info.update({
             "available": True, "cdrs": ann["cdrs"], "cdr_sequences": ann["cdr_sequences"],
             "hit": ann["hit"], "token_ranges": ranges,
+            "domain_span": ann.get("domain_span"),
         })
     else:
         cdr_info["note"] = ("--no-nanobody (타겟 단독/복합체) 입력이거나 "
